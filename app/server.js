@@ -1,7 +1,20 @@
-const C = require('config'),
-    restify = require('restify'),
-    restifyMongoose = require('restify-mongoose'),
-    mongoose = require('mongoose');
+const C = require('config')
+  , restify = require('restify')
+  , restifyMongoose = require('restify-mongoose')
+  , mongoose = require('mongoose')
+  , controllers = require('./controllers');
+
+// Database configuration
+if( !mongoose.connection.readyState ){
+
+    mongoose.connect( C.Mongo.host, C.Mongo.database, C.Mongo.port, function( err ){
+        if( err ){
+            console.log('Could not connect to MongoDB', err );
+            process.exit(1);
+        }
+        console.log( 'MongoDB Connected!' );
+    });
+}
 
 // Initialize server
 var server = restify.createServer({
@@ -15,6 +28,7 @@ server.use(restify.bodyParser());
 
 // CORS configuration
 function unknownMethodHandler(req, res) {
+  console.log("You cannot do that");
   if (req.method.toLowerCase() === 'options') {
       console.log('received an options method request');
     var allowHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With']; // added Origin & X-Requested-With
@@ -35,22 +49,14 @@ function unknownMethodHandler(req, res) {
 server.on('MethodNotAllowed', unknownMethodHandler);
 server.use(restify.CORS());
 
-// Database configuration
-if( !mongoose.connection.readyState ){
-
-    mongoose.connect( C.Mongo.host, C.Mongo.database, C.Mongo.port, function( err ){
-        if( err ){
-            console.log('Could not connect to MongoDB', err );
-            process.exit(1);
-        }
-        console.log( 'MongoDB Connected!' );
-    });
-}
-
 // Basic routes
 server.get( '/echo', function( req, res, next){
   res.send( 200, req.query );
   next();
 })
+
+// Load controllers
+new controllers.game(server);
+
 
 module.exports = server;
