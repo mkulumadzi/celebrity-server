@@ -22,7 +22,7 @@ GamesCtrl.prototype.createGame = function (req, res, next) {
       console.log('Error creating game: %s', err.message);
       return next(err);
     }
-    res.send( game );
+    res.send( 201, game );
     return next();
   })
 
