@@ -19,6 +19,7 @@
   "homepage": "https://github.com/mkulumadzi/celebrity-server#readme",
   "dependencies": {
     "async": "^2.2.0",
+    "coffee-script": "^1.12.4",
     "config": "^1.25.1",
     "mongoose": "^4.9.1",
     "mongoose-timestamps": "0.0.1",

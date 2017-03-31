@@ -7,8 +7,8 @@ gulp.task('set-test-env', function() {
 })
 
 gulp.task('test', function() {
-  return gulp.src(['test/**/*.js'], { read: false })
-    .pipe(mocha( { reporter: 'spec' }))
+  return gulp.src(['test/**/*.coffee'], { read: false })
+    .pipe(mocha( { reporter: 'spec', compilers: 'coffee:coffee-script/register' }))
     .on('error', util.log);
 })
 
