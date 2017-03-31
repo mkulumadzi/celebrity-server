@@ -3,7 +3,8 @@ global.mongoose = require('mongoose')
 global.chai = require('chai')
 global.chaiHttp = require('chai-http')
 global.should = chai.should();
-global.server = require('../app/server');
+global.server = require('../app/server')
+global.async = require('async')
 
 chai.use(chaiHttp);
 mongoose.Promise = global.Promise;

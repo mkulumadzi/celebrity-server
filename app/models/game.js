@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 
 var GameSchema = new mongoose.Schema({
   shortId: { type: String, required: true }
-  , status: { type: String }
+  , status: { type: String, required: true }
 })
 
 GameSchema.plugin(timestamps);

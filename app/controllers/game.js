@@ -16,7 +16,7 @@ module.exports = GamesCtrl;
 
 GamesCtrl.prototype.createGame = function (req, res, next) {
 
-  var game = new Game( { 'shortId': shortId() } );
+  var game = new Game( { 'shortId': shortId(), status: 'new' } );
   game.save( function(err, game) {
     if (err) {
       console.log('Error creating game: %s', err.message);

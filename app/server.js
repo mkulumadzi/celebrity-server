@@ -57,6 +57,7 @@ server.get( '/echo', function( req, res, next){
 
 // Load controllers
 new controllers.game(server);
+new controllers.player(server);
 
 
 module.exports = server;

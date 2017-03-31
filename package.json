@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/mkulumadzi/celebrity-server#readme",
   "dependencies": {
+    "async": "^2.2.0",
     "config": "^1.25.1",
     "mongoose": "^4.9.1",
     "mongoose-timestamps": "0.0.1",
@@ -31,6 +32,7 @@
     "gulp": "^3.9.1",
     "gulp-mocha": "^4.1.0",
     "gulp-util": "^3.0.8",
-    "mocha": "^3.2.0"
+    "mocha": "^3.2.0",
+    "restify-errors": "^4.3.0"
   }
 }

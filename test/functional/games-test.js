@@ -2,7 +2,7 @@ describe('games CRUD', function() {
 
   var gameId = '';
 
-  it('should create a game', function(done) {
+  it('should create a game, generating a shortId and giving it a status of new', function(done) {
     chai.request(server)
       .post('/games')
       .end(function(err, res){
@@ -11,6 +11,7 @@ describe('games CRUD', function() {
         res.should.be.json;
         res.body.shortId.should.be.string;
         res.body.shortId.should.have.lengthOf(4);
+        res.body.status.should.equal('new');
         gameId = res.body._id.toString();
         done();
     });
