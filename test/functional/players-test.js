@@ -1,12 +1,17 @@
+const Game = require('../../app/models/game');
+
 describe('players CRUD', function() {
 
-  var shortId = '';
+  var shortId;
+  var gameId;
+
 
   before( function(done) {
     chai.request(server)
       .post('/games')
       .end(function(err, res){
         shortId = res.body.shortId.toString();
+        gameId = res.body._id;
         done();
     });
   });
@@ -88,5 +93,13 @@ describe('players CRUD', function() {
         });
       });
   });
+
+  // it('should only allow new games to be joined', function(done){
+  //   Game.findOne({'_id': gameId}, function(err, game) {
+  //     should.not.exist(err);
+  //     game.update({"status": "started"})
+  //     done()
+  //   });
+  // });
 
 });

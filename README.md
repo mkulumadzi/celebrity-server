@@ -17,7 +17,7 @@ Start gulp `watch-test` task:
 
 `POST /join` ~> Join a game
 
-`POST /games/<id>/celebrity` ~> Add a celebrity to the game
+`POST /celebrity` ~> Add a celebrity to the game
 
 `POST /games/<id>/start` ~> Start the game
 

@@ -41,6 +41,8 @@ var validateGame = function( shortId, cb ) {
   Game.findOne({ 'shortId': shortId }, function (err, game) {
     if ( !game ) {
       return cb(new errors.BadRequestError("A valid shortId is required", null));
+    } else if ( game.status !== "new" ) {
+      return cb(new errors.BadRequestError("Only new games may be joined", null));
     } else if ( err ) {
       return cb(err, null);
     }  else {
@@ -55,7 +57,6 @@ var validatePlayer = function( name, game, cb ) {
       var message = name + " has already joined the game"
       return cb(new errors.BadRequestError(message));
     } else Player.count({ game: game._id}, function(err, count) {
-      console.log("There are %s players in the game", count);
       if(err) {
         return cb(err);
       } else if (count >= 8) {
