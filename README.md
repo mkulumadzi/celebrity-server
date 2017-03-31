@@ -19,12 +19,12 @@ Start gulp `watch-test` task:
 
 `POST /celebrity` ~> Add a celebrity to the game
 
-`POST /games/<id>/start` ~> Start the game
+`POST /game/start` ~> Start the game
 
-`GET /games/<id>/next` ~> Get the next player's turn
+`GET /game` ~> Get the current status (stage, turns, status) for the game
+
+`GET /game/next` ~> Get the next player's turn
 
 `POST /turns/<id>/start` ~> Start a turn
 
 `POST /turns/<id>/celebrity` ~> Record the score (right or wrong) for a celebrity on a turn
-
-`GET /games/<id>/status` ~> Get the current status (stage, turns, status) for the game

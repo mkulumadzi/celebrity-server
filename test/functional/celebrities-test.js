@@ -83,7 +83,7 @@ describe('celebrities CRUD', function() {
           chai.request(server)
           .post('/celebrity')
           .set('Authorization', authHeader)
-          .send({"name": "Bob Hope"})
+          .send({"name": celebrity})
           .end(function(err, res){
             cb();
           });
