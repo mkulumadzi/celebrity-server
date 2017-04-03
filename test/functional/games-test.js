@@ -1,4 +1,7 @@
 const Game = require('../../app/models/game');
+const Player = require('../../app/models/player');
+const Celebrity = require('../../app/models/celebrity')
+const seeds = require('../db/seeds');
 
 describe('create game', function() {
 
@@ -47,57 +50,57 @@ describe('create game', function() {
 
 describe('start game', function() {
 
-  // Create a game
-  // add four players
-  // add five celebs per player
-  // show the game can be started
-  // show the game cannot be started if it has less than 4 players
-  // show the game cannot be started if it has less than 20 celebrities
-  // show the game cannot be startd if its status is not 'new'
   describe( 'started successfully', function() {
     var gameHeader;
 
+    seeds.createNewGame( function( err ){
+
+    });
+
     before( function(done) {
-      chai.request(server)
-        .post('/games')
-        .end(function(err, res){
-          var game = res.body;
-          gameHeader = "Bearer " + game._id;
-          players = ["player1", "player2", "player3", "player4"]
-          async.each(players, function( player, cb) {
-            chai.request(server)
-              .post('/join')
-              .send({"shortId": game.shortId, "name": player })
-              .end(function(err, res){
-                var player = res.body;
-                authHeader = "Bearer " + player._id;
-                celebrities = ["a", "b", "c", "d", "e"]
-                async.each(celebrities, function(celebrity, cb) {
-                  chai.request(server)
-                  .post('/celebrity')
-                  .set('Authorization', authHeader)
-                  .send({"name": celebrity})
-                  .end(function(err, res){
-                    cb();
-                  });
-                }, function() {
-                  cb();
-                });
+      Game.create({shortId: "ABCD", status: "new" }, function( err, game) {
+        if ( err ) { console.log( err ); }
+        gameHeader = "Bearer " + game._id;
+        players = ["player1", "player2", "player3", "player4"];
+        async.each( players, function( player, cb) {
+          Player.create({ name: player, game: game._id }, function( err, player ) {
+            if ( err ) { console.log( err ); }
+            celebrities = ["a", "b", "c", "d", "e"];
+            async.each( celebrities, function( celebrity, cb) {
+              Celebrity.create({ name: celebrity, game: game._id, addedBy: player._id}, function( err, celebrity){
+                if ( err ) { console.log( err ); }
+                cb();
               });
-          }, function() {
-            done();
+            }, function() {
+              cb();
+            });
           });
+        }, function() {
+          done();
         });
       });
+    });
 
     it('starts the game', function(done){
       chai.request(server)
-        .post('/game/start')
+        .put('/game/start')
         .send({})
         .set('Authorization', gameHeader)
         .end(function(err, res) {
           should.not.exist(err);
-          res.should.have.status(204);
+          res.should.have.status(201);
+          res.body.status.should.equal("started");
+          done();
+        });
+    });
+
+    it('gets the game', function(done){
+      chai.request(server)
+        .get('/game')
+        .set('Authorization', gameHeader)
+        .end(function(err, res) {
+          should.not.exist(err);
+          res.should.have.status(200);
           done();
         });
     });
@@ -118,7 +121,7 @@ describe('start game', function() {
             game.update({'status': 'started'}, function( err, updated) {
               should.not.exist(err);
               chai.request(server)
-                .post('/game/start')
+                .put('/game/start')
                 .send({})
                 .set('Authorization', gameHeader)
                 .end(function(err, res) {
@@ -160,7 +163,7 @@ describe('start game', function() {
               });
           }, function() {
             chai.request(server)
-              .post('/game/start')
+              .put('/game/start')
               .send({})
               .set('Authorization', gameHeader)
               .end(function(err, res) {
@@ -201,7 +204,7 @@ describe('start game', function() {
               });
           }, function() {
             chai.request(server)
-              .post('/game/start')
+              .put('/game/start')
               .send({})
               .set('Authorization', gameHeader)
               .end(function(err, res) {
@@ -214,8 +217,4 @@ describe('start game', function() {
     });
   });
 
-});
-
-describe( 'get game', function() {
-  
 });

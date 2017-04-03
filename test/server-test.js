@@ -10,7 +10,6 @@ chai.use(chaiHttp);
 mongoose.Promise = global.Promise;
 
 describe('echo', function() {
-
   it('should echo parameters', function(done) {
     chai.request(server)
       .get('/echo?marco=polo')

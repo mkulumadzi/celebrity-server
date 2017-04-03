@@ -12,7 +12,8 @@ var GamesCtrl = function( server, opts ){
   server.get( '/games', game.query());
   server.get('/games/:id', game.detail());
   server.post( '/games', this.createGame );
-  server.post( '/game/start', this.startGame );
+  server.put( '/game/start', this.startGame );
+  server.get( '/game', this.getGame );
 
 }
 
@@ -51,11 +52,11 @@ GamesCtrl.prototype.startGame = function (req, res, next) {
         if ( err ) {
           return next ( err );
         } else {
-          game.update( { "status": "started"}, function( err, updated ) {
+          startGame( game, function( err, game) {
             if ( err ) {
-              return next ( err );
+              return next( err );
             } else {
-              res.send( 204 );
+              res.send( 201, game );
               return next();
             }
           });
@@ -104,4 +105,29 @@ var validateGameToStart = function( game, cb ) {
       }
     });
   }
+}
+
+var startGame = function( game, cb ) {
+  Game.findOneAndUpdate({'_id': game._id}, {$set:{"status":"started"}}, {new: true }, function( err, doc){
+    if ( err ) {
+      return cb( err );
+    } else {
+      return cb( null, doc );
+    }
+  });
+}
+
+
+// Get a game, converting it to an object and
+GamesCtrl.prototype.getGame = function (req, res, next) {
+  findGame( req, function( err, game ) {
+    if ( err ) {
+      return next( err );
+    } else {
+      o = game.toObject();
+      o.foo = "bar";
+      res.send( 200, o );
+      return next();
+    }
+  });
 }
