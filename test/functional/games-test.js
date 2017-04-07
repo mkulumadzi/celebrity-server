@@ -80,6 +80,8 @@ describe('start game', function() {
         .end(function(err, res) {
           should.not.exist(err);
           res.should.have.status(200);
+          res.body.players.should.have.length(4);
+          res.body.celebrities.should.have.length(20);
           done();
         });
     });
@@ -97,7 +99,6 @@ describe('start game', function() {
         done();
       });
     });
-
 
     it('returns an error if the game status is not new', function(done){
       chai.request(server)

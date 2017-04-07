@@ -124,10 +124,23 @@ GamesCtrl.prototype.getGame = function (req, res, next) {
     if ( err ) {
       return next( err );
     } else {
-      o = game.toObject();
-      o.foo = "bar";
-      res.send( 200, o );
-      return next();
+      gameObject = game.toObject();
+      game.playerObjects( function( err, players) {
+        if ( err ) {
+          return next( err );
+        } else {
+          gameObject.players = players;
+          game.celebrityObjects( function( err, celebrities) {
+            if ( err ) {
+              return next( err );
+            } else {
+              gameObject.celebrities = celebrities;
+              res.send( 200, gameObject );
+              return next();
+            }
+          });
+        }
+      });
     }
   });
 }
