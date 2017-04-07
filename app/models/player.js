@@ -5,7 +5,7 @@ const mongoose = require('mongoose')
 
 var PlayerSchema = new mongoose.Schema({
   name: { type: String, required: true }
-  , game: { type: ObjectId, required: true }
+  , game: { type: ObjectId, ref: 'Game' }
 })
 
 PlayerSchema.plugin(timestamps);

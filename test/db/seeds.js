@@ -1,6 +1,7 @@
-const Game = require('../../app/models/game');
-const Player = require('../../app/models/player');
-const Celebrity = require('../../app/models/celebrity');
+const faker = require('faker')
+  , Game = require('../../app/models/game')
+  , Player = require('../../app/models/player')
+  , Celebrity = require('../../app/models/celebrity');
 
 var Seeds = function() { }
 
@@ -11,6 +12,7 @@ Seeds.prototype.createNewGame = function( cb ) {
     if ( err ) { cb( err ); }
     addPlayersAndCelebrities( game, function( err ) {
       if ( err ) { cb( err ); }
+      game.save(); // Game is not saved while adding celebrities because async calls save celebrities more than once.
       cb( null, game);
     });
   });
@@ -24,11 +26,11 @@ var createGame = function( cb ) {
 }
 
 var addPlayersAndCelebrities = function( game, cb ) {
-  players = ["player1", "player2", "player3", "player4"];
+  players = [0, 1, 2, 3];
   async.each( players, function( player, cb) {
-    Player.create({ name: player, game: game._id }, function( err, player ) {
+    game.addPlayer( faker.name.findName(), function( err, player) {
       if ( err ) { cb( err ); }
-      addCelebrities( player, function( err ){
+      addCelebrities( game, player, function( err ){
         if ( err ) { cb( err ); }
         cb();
       });
@@ -38,10 +40,10 @@ var addPlayersAndCelebrities = function( game, cb ) {
   });
 }
 
-var addCelebrities = function( player, cb ) {
-  celebrities = ["a", "b", "c", "d", "e"];
+var addCelebrities = function( game, player, cb ) {
+  celebrities = [0, 1, 2, 3, 4];
   async.each( celebrities, function( celebrity, cb) {
-    Celebrity.create({ name: celebrity, game: player.game, addedBy: player._id }, function( err, celebritiy ) {
+    game.addCelebrity( player, faker.name.findName(), function( err, celebrity) {
       if ( err ) { console.log( err ); }
       cb();
     });

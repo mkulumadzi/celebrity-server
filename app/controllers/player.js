@@ -69,11 +69,11 @@ var validatePlayer = function( name, game, cb ) {
 }
 
 var createPlayer = function( name, game, cb ) {
-  var player = new Player( { 'name': name, game: game._id });
-  player.save( function(err, player) {
+  game.addPlayer( name, function( err, player ) {
     if (err) {
       return cb(new errors.BadRequestError(err.message), null);
     } else {
+      game.save();
       return cb(null, player);
     }
   });

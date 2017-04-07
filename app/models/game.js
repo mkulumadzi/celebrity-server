@@ -1,61 +1,57 @@
 const mongoose = require('mongoose')
   , timestamps = require('mongoose-timestamps')
+  , Schema = mongoose.Schema
+  , ObjectId = Schema.ObjectId
   , Player = require('./player')
   , Celebrity = require('./celebrity')
+  , Team = require('./team')
 
 var GameSchema = new mongoose.Schema({
   shortId: { type: String, required: true }
   , status: { type: String, required: true }
-}, {
-  toObject: {
-    virtuals: true
-  },
-  toJson: {
-    virtuals: true
-  }
+  , players: [ { type: ObjectId, ref: 'Player'} ]
+  , celebrities: [ { type: ObjectId, ref: 'Celebrity'} ]
+  , teamA: { type: ObjectId, ref: 'Team'}
+  , teamB: { type: ObjectId, ref: 'Team'}
 });
 
-GameSchema.methods.players = function( cb ) {
+GameSchema.methods.addPlayer = function( name, cb ) {
   var game = this;
-  Player.find({game: this._id }, function( err, players ){
-    if ( err ) { cb( err ); }
-    cb( null, players );
+  var player = new Player( { name: name, game: this._id });
+  player.save( function(err, result) {
+    if (err) {
+      return cb(err);
+    } else {
+      // Game is not saved during this method, because if multiple celebrirites are bing added at the same time they can be duplicated.
+      game.players.push( player._id );
+      cb( null, player );
+    }
   });
 }
 
-GameSchema.methods.playerObjects = function( cb ) {
+GameSchema.methods.addCelebrity = function( player, name, cb ) {
   var game = this;
-  playerObjects = [];
-  game.players( function( err, players) {
-    if ( err ) { cb( err ); }
-    async.each( players, function( player, cb) {
-      playerObjects.push( { _id: player._id, name: player.name });
-      cb();
-    }, function() {
-      cb( null, playerObjects );
-    });
+  var celebrity = new Celebrity( { name: name, addedBy: player._id });
+  celebrity.save( function(err, result) {
+    if (err) {
+      return cb(err);
+    } else {
+      // Game is not saved during this method, because if multiple celebrirites are bing added at the same time they can be duplicated.
+      game.celebrities.push( celebrity._id );
+      cb( null, celebrity );
+    }
   });
 }
 
-GameSchema.methods.celebrities = function( cb ) {
+GameSchema.methods.createTeam = function( name, playerIds, cb ) {
   var game = this;
-  Celebrity.find({game: this._id }, function( err, celebrities ){
-    if ( err ) { cb( err ); }
-    cb( null, celebrities );
-  });
-}
-
-GameSchema.methods.celebrityObjects = function( cb ) {
-  var game = this;
-  celebrityObjects = [];
-  game.celebrities( function( err, celebrities ) {
-    if ( err ) { cb( err ); }
-    async.each( celebrities, function( celebrity, cb) {
-      celebrityObjects.push( { _id: celebrity._id, name: celebrity.name });
-      cb();
-    }, function() {
-      cb( null, celebrityObjects );
-    });
+  var team = new Team( { name: name, game: this._id, players: playerIds });
+  team.save( function(err, result) {
+    if ( err ) {
+      return cb( err );
+    } else {
+      cb( null, team );
+    }
   });
 }
 

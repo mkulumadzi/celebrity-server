@@ -3,7 +3,10 @@ const mongoose = require('mongoose')
   , Game = require('../models/game')
   , Celebrity = require('../models/celebrity')
   , Player = require('../models/player')
-  , errors = require('restify-errors');
+  , Team = require('../models/team')
+  , errors = require('restify-errors')
+  , shuffle = require('shuffle-array')
+  , splitArray = require('split-array');
 
 var GamesCtrl = function( server, opts ){
 
@@ -93,26 +96,51 @@ var validateGameToStart = function( game, cb ) {
       } else if (count < 4 ) {
         return cb( new errors.BadRequestError("Games must have at least 4 players"));
       } else {
-        Celebrity.count({"game": game._id}, function(err, count) {
-          if( err ) {
-            return cb( err );
-          } else if (count < 20 ) {
-            return cb( new errors.BadRequestError("Games must have at least 20 celebrities"));
-          } else {
-            return cb( null, game );
-          }
-        });
+        if ( game.celebrities.length < 20 ) {
+          return cb( new errors.BadRequestError("Games must have at least 20 celebrities"));
+        } else {
+          return cb( null, game );
+        }
       }
     });
   }
 }
 
 var startGame = function( game, cb ) {
-  Game.findOneAndUpdate({'_id': game._id}, {$set:{"status":"started"}}, {new: true }, function( err, doc){
+  createRandomTeams( game, function( err, game) {
     if ( err ) {
       return cb( err );
     } else {
-      return cb( null, doc );
+      Game.findOneAndUpdate({'_id': game._id}, {$set:{"status":"started"}}, {new: true }, function( err, doc){
+        if ( err ) {
+          return cb( err );
+        } else {
+          return cb( null, doc );
+        }
+      });
+    }
+  });
+}
+
+var createRandomTeams = function( game, cb ) {
+  var players = game.players;
+  shuffle(players);
+  var teamSize = Math.ceil(players.length / 2 );
+  var teams = splitArray(players, teamSize);
+  game.createTeam( "Team A", teams[0], function( err, team ) {
+    if ( err ) {
+      return cb( err );
+    } else {
+      game.teamA = team;
+      game.createTeam( "Team B", teams[1], function( err, team ) {
+        if ( err ) {
+          return cb( err );
+        } else {
+          game.teamB = team;
+          game.save();
+          return cb( null, game );
+        }
+      });
     }
   });
 }
@@ -124,23 +152,25 @@ GamesCtrl.prototype.getGame = function (req, res, next) {
     if ( err ) {
       return next( err );
     } else {
-      gameObject = game.toObject();
-      game.playerObjects( function( err, players) {
-        if ( err ) {
-          return next( err );
-        } else {
-          gameObject.players = players;
-          game.celebrityObjects( function( err, celebrities) {
-            if ( err ) {
-              return next( err );
-            } else {
-              gameObject.celebrities = celebrities;
-              res.send( 200, gameObject );
-              return next();
-            }
-          });
-        }
-      });
+      Game
+        .findOne({_id: game._id })
+        .populate({
+          path: 'players teamA teamB celebrities'
+          , select: 'name players'
+          // , populate: { path: 'players' }
+          // , populate: { path: 'players', select: 'name' }
+          // , select: 'name players'
+          // , select: 'name players'
+          // , populate: { path: 'players' }
+        })
+        .exec(function (err, game) {
+          res.send( 200, game );
+          if ( err ) {
+            return next( err );
+          } else {
+            return next();
+          }
+        });
     }
   });
 }

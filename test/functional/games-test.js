@@ -82,6 +82,8 @@ describe('start game', function() {
           res.should.have.status(200);
           res.body.players.should.have.length(4);
           res.body.celebrities.should.have.length(20);
+          res.body.celebrities[0].name.should.exist;
+          should.not.exist(res.body.celebrities[0].created_at);
           done();
         });
     });
@@ -120,20 +122,17 @@ describe('start game', function() {
     });
 
     it('returns an error if the game has less than twenty celebrities', function(done){
-      game.players( function( err, players) {
+      Celebrity.findOneAndRemove({addedBy: game.players[0]}, function(err, result){
         should.not.exist( err );
-        Celebrity.findOneAndRemove({addedBy: players[0]._id}, function(err, result){
-          should.not.exist( err );
-          chai.request(server)
-            .put('/game/start')
-            .send({})
-            .set('Authorization', gameHeader)
-            .end(function(err, res) {
-              should.exist(err);
-              res.should.have.status(400);
-              done();
-            });
-        });
+        chai.request(server)
+          .put('/game/start')
+          .send({})
+          .set('Authorization', gameHeader)
+          .end(function(err, res) {
+            should.exist(err);
+            res.should.have.status(400);
+            done();
+          });
       });
     });
 

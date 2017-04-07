@@ -21,10 +21,11 @@ CelebrityCtrl.prototype.addCelebrity = function (req, res, next) {
         if ( err ) {
           return next( err );
         } else {
-          addCelebrity( name, player, game, function( err, celebrity) {
+          game.addCelebrity( player, name, function( err, celebrity) {
             if ( err ) {
-              return next( err );
+              return next(new errors.BadRequestError(err.message));
             } else {
+              game.save();
               res.send(201, celebrity);
               return next();
             }
@@ -67,17 +68,6 @@ var validateGame = function( player, cb ) {
       return cb(new errors.BadRequestError(err.message));
     } else {
       return cb( null, game );
-    }
-  });
-}
-
-var addCelebrity = function( name, player, game, cb ) {
-  var celebrity = new Celebrity( { "name": name, "game": game._id, "addedBy": player._id });
-  celebrity.save( function(err, celebrity) {
-    if (err) {
-      return cb(new errors.BadRequestError(err.message));
-    } else {
-      return cb( null, celebrity);
     }
   });
 }
