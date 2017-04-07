@@ -14,7 +14,7 @@ var GameSchema = new mongoose.Schema({
   }
 });
 
-var players = function( cb ) {
+GameSchema.methods.players = function( cb ) {
   var game = this;
   Player.find({game: this._id }, function( err, players ){
     if ( err ) { cb( err ); }

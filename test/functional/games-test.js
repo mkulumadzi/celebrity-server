@@ -53,31 +53,10 @@ describe('start game', function() {
   describe( 'started successfully', function() {
     var gameHeader;
 
-    seeds.createNewGame( function( err ){
-
-    });
-
     before( function(done) {
-      Game.create({shortId: "ABCD", status: "new" }, function( err, game) {
-        if ( err ) { console.log( err ); }
+      seeds.createNewGame( function( err, game ){
         gameHeader = "Bearer " + game._id;
-        players = ["player1", "player2", "player3", "player4"];
-        async.each( players, function( player, cb) {
-          Player.create({ name: player, game: game._id }, function( err, player ) {
-            if ( err ) { console.log( err ); }
-            celebrities = ["a", "b", "c", "d", "e"];
-            async.each( celebrities, function( celebrity, cb) {
-              Celebrity.create({ name: celebrity, game: game._id, addedBy: player._id}, function( err, celebrity){
-                if ( err ) { console.log( err ); }
-                cb();
-              });
-            }, function() {
-              cb();
-            });
-          });
-        }, function() {
-          done();
-        });
+        done();
       });
     });
 
@@ -109,111 +88,67 @@ describe('start game', function() {
   describe('error conditions', function() {
 
     var gameHeader;
+    var game;
+
+    before( function(done) {
+      seeds.createNewGame( function( err, g ){
+        game = g;
+        gameHeader = "Bearer " + game._id;
+        done();
+      });
+    });
+
 
     it('returns an error if the game status is not new', function(done){
       chai.request(server)
-        .post('/games')
-        .end(function(err, res){
-          var game = res.body;
-          gameHeader = "Bearer " + game._id;
-          Game.findOne({'_id': game._id }, function( err, game) {
-            should.not.exist(err);
-            game.update({'status': 'started'}, function( err, updated) {
-              should.not.exist(err);
-              chai.request(server)
-                .put('/game/start')
-                .send({})
-                .set('Authorization', gameHeader)
-                .end(function(err, res) {
-                  should.exist(err);
-                  res.should.have.status(400);
-                  done();
-                });
+        .put('/game/start')
+        .send({})
+        .set('Authorization', gameHeader)
+        .end(function(err, res) {
+          should.not.exist(err);
+          chai.request(server)
+            .put('/game/start')
+            .send({})
+            .set('Authorization', gameHeader)
+            .end(function(err, res) {
+              should.exist(err);
+              res.should.have.status(400);
+              done();
             });
-          });
-        });
-      });
-
-    it('returns an error if the game has less than twenty celebrities', function(done){
-      chai.request(server)
-        .post('/games')
-        .end(function(err, res){
-          var game = res.body;
-          gameHeader = "Bearer " + game._id;
-          players = ["player1", "player2", "player3", "player4"]
-          async.each(players, function( player, cb) {
-            chai.request(server)
-              .post('/join')
-              .send({"shortId": game.shortId, "name": player })
-              .end(function(err, res){
-                var player = res.body;
-                authHeader = "Bearer " + player._id;
-                celebrities = ["a", "b", "c", "d"]
-                async.each(celebrities, function(celebrity, cb) {
-                  chai.request(server)
-                  .post('/celebrity')
-                  .set('Authorization', authHeader)
-                  .send({"name": celebrity})
-                  .end(function(err, res){
-                    cb();
-                  });
-                }, function() {
-                  cb();
-                });
-              });
-          }, function() {
-            chai.request(server)
-              .put('/game/start')
-              .send({})
-              .set('Authorization', gameHeader)
-              .end(function(err, res) {
-                should.exist(err);
-                res.should.have.status(400);
-                done();
-              });
-          });
         });
     });
 
-    it('returns an error if the game has less than four players', function(done){
-      chai.request(server)
-        .post('/games')
-        .end(function(err, res){
-          var game = res.body;
-          gameHeader = "Bearer " + game._id;
-          players = ["player1", "player2", "player3"]
-          async.each(players, function( player, cb) {
-            chai.request(server)
-              .post('/join')
-              .send({"shortId": game.shortId, "name": player })
-              .end(function(err, res){
-                var player = res.body;
-                authHeader = "Bearer " + player._id;
-                celebrities = ["a", "b", "c", "d", "e"]
-                async.each(celebrities, function(celebrity, cb) {
-                  chai.request(server)
-                  .post('/celebrity')
-                  .set('Authorization', authHeader)
-                  .send({"name": celebrity})
-                  .end(function(err, res){
-                    cb();
-                  });
-                }, function() {
-                  cb();
-                });
-              });
-          }, function() {
-            chai.request(server)
-              .put('/game/start')
-              .send({})
-              .set('Authorization', gameHeader)
-              .end(function(err, res) {
-                should.exist(err);
-                res.should.have.status(400);
-                done();
-              });
-          });
+    it('returns an error if the game has less than twenty celebrities', function(done){
+      game.players( function( err, players) {
+        should.not.exist( err );
+        Celebrity.findOneAndRemove({addedBy: players[0]._id}, function(err, result){
+          should.not.exist( err );
+          chai.request(server)
+            .put('/game/start')
+            .send({})
+            .set('Authorization', gameHeader)
+            .end(function(err, res) {
+              should.exist(err);
+              res.should.have.status(400);
+              done();
+            });
         });
+      });
+    });
+
+    it('returns an error if the game has less than four players', function(done){
+      Player.findOneAndRemove({game: game._id}, function(err, result){
+        should.not.exist( err );
+        chai.request(server)
+          .put('/game/start')
+          .send({})
+          .set('Authorization', gameHeader)
+          .end(function(err, res) {
+            should.exist(err);
+            res.should.have.status(400);
+            done();
+          });
+      });
     });
   });
 
