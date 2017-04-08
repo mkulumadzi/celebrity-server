@@ -1,7 +1,8 @@
-const Game = require('../../app/models/game');
-const Player = require('../../app/models/player');
-const Celebrity = require('../../app/models/celebrity')
-const seeds = require('../db/seeds');
+const Game = require('../../app/models/game')
+  , Player = require('../../app/models/player')
+  , Celebrity = require('../../app/models/celebrity')
+  , Turn = require('../../app/models/turn')
+  , seeds = require('../db/seeds');
 
 describe('create game', function() {
 
@@ -148,6 +149,70 @@ describe('start game', function() {
             res.should.have.status(400);
             done();
           });
+      });
+    });
+  });
+
+});
+
+describe('next player', function() {
+
+  var gameHeader;
+  var gameId;
+
+  before( function(done) {
+    seeds.createNewGame( function( err, game ){
+      gameId = game._id;
+      gameHeader = "Bearer " + game._id;
+      chai.request(server)
+        .put('/game/start')
+        .send({})
+        .set('Authorization', gameHeader)
+        .end(function(err, res) {
+          should.not.exist(err);
+          done();
+        });
+    });
+  });
+
+  it('should return the first player from team A at the start of the game', function(done) {
+    chai.request(server)
+      .get('/game/next')
+      .send({})
+      .set('Authorization', gameHeader)
+      .end(function(err, res) {
+        should.not.exist(err);
+        res.should.have.status(200);
+        res.body.name.should.exist;
+        res.body.team.should.exist;
+        res.body.team.name.should.exist;
+        res.body.team.name.should.equal("Team A");
+        done();
+      });
+  });
+
+  it('should return the first player from team B after one turn has been played', function(done) {
+    Game.findOne({_id: gameId}, function( err, game ) {
+      should.not.exist(err);
+      game.nextPlayer( function( err, player) {
+        should.not.exist(err);
+        var turn = new Turn({team: game.teamA, player: player })
+        turn.save( function( err, res ) {
+          should.not.exist(err);
+          game.roundOne.push(turn);
+          game.save( function( err, res ) {
+            should.not.exist(err);
+            chai.request(server)
+              .get('/game/next')
+              .send({})
+              .set('Authorization', gameHeader)
+              .end(function(err, res) {
+                should.not.exist(err);
+                res.body.team.name.should.equal("Team B");
+                done();
+              });
+          });
+        });
       });
     });
   });

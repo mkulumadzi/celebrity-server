@@ -17,6 +17,7 @@ var GamesCtrl = function( server, opts ){
   server.post( '/games', this.createGame );
   server.put( '/game/start', this.startGame );
   server.get( '/game', this.getGame );
+  server.get( '/game/next', this.getNextPlayer );
 
 }
 
@@ -157,20 +158,45 @@ GamesCtrl.prototype.getGame = function (req, res, next) {
         .populate({
           path: 'players teamA teamB celebrities'
           , select: 'name players'
-          // , populate: { path: 'players' }
-          // , populate: { path: 'players', select: 'name' }
-          // , select: 'name players'
-          // , select: 'name players'
-          // , populate: { path: 'players' }
         })
         .exec(function (err, game) {
-          res.send( 200, game );
           if ( err ) {
             return next( err );
           } else {
+            res.send( 200, game );
             return next();
           }
         });
+    }
+  });
+}
+
+//Get next player for a game
+GamesCtrl.prototype.getNextPlayer = function( req, res, next) {
+  findGame( req, function( err, game ) {
+    if ( err ) {
+      return next( err );
+    } else {
+      game.nextPlayer( function( err, nextPlayer) {
+        if ( err ) {
+          return next( err );
+        } else {
+          Player
+            .findOne({_id: nextPlayer })
+            .populate({
+              path: 'team'
+              , select: 'name'
+            })
+            .exec(function (err, player) {
+              if ( err ) {
+                return next( err );
+              } else {
+                res.send( 200, player );
+                return next();
+              }
+            });
+        }
+      });
     }
   });
 }

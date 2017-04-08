@@ -5,8 +5,11 @@ const mongoose = require('mongoose')
 
 var CelebritySchema = new mongoose.Schema({
   name: { type: String, required: true }
-  // , game: { type: ObjectId, ref: 'Game', required: true }
+  , game: { type: ObjectId, ref: 'Game', required: true }
   , addedBy: { type: ObjectId, ref: 'Player', required: true }
+  , doneRoundOne: { type: Boolean }
+  , doneRoundTwo: { type: Boolean }
+  , doneRoundThre: { type: Boolean }
 })
 
 CelebritySchema.plugin(timestamps);
