@@ -7,9 +7,9 @@ var CelebritySchema = new mongoose.Schema({
   name: { type: String, required: true }
   , game: { type: ObjectId, ref: 'Game', required: true }
   , addedBy: { type: ObjectId, ref: 'Player', required: true }
-  , doneRoundOne: { type: Boolean }
-  , doneRoundTwo: { type: Boolean }
-  , doneRoundThre: { type: Boolean }
+  , doneRoundOne: { type: Boolean, default: false }
+  , doneRoundTwo: { type: Boolean, default: false }
+  , doneRoundThre: { type: Boolean, default: false }
 })
 
 CelebritySchema.plugin(timestamps);

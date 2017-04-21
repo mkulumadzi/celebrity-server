@@ -43,7 +43,7 @@ _header: player id_
 - creates a new turn for the player in that round of the game and returns the first celebrity
 - sets the turn to expire in 60 seconds after having begun
 
-`PUT /turns` ~> Add a score to a turn
+`PUT /turns/:id` ~> Add an attempt to a turn
 - Updates the celebrity with either a 'right' or a 'skip' score
 - Randomly returns the next celebrity out of the remaining celebrities for the round that have not been marked as 'right' in a turn
 - Returns a 400 error if the player has already skipped twice during that turn

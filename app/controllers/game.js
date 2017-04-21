@@ -31,7 +31,6 @@ GamesCtrl.prototype.createGame = function (req, res, next) {
   var game = new Game( { 'shortId': shortId(), status: 'new' } );
   game.save( function(err, game) {
     if (err) {
-      console.log('Error creating game: %s', err.message);
       return next(err);
     }
     res.send( 201, game );
@@ -56,7 +55,7 @@ GamesCtrl.prototype.startGame = function (req, res, next) {
         if ( err ) {
           return next ( err );
         } else {
-          startGame( game, function( err, game) {
+          game.start( function( err, game ) {
             if ( err ) {
               return next( err );
             } else {
@@ -107,45 +106,6 @@ var validateGameToStart = function( game, cb ) {
   }
 }
 
-var startGame = function( game, cb ) {
-  createRandomTeams( game, function( err, game) {
-    if ( err ) {
-      return cb( err );
-    } else {
-      Game.findOneAndUpdate({'_id': game._id}, {$set:{"status":"started"}}, {new: true }, function( err, doc){
-        if ( err ) {
-          return cb( err );
-        } else {
-          return cb( null, doc );
-        }
-      });
-    }
-  });
-}
-
-var createRandomTeams = function( game, cb ) {
-  var players = game.players;
-  shuffle(players);
-  var teamSize = Math.ceil(players.length / 2 );
-  var teams = splitArray(players, teamSize);
-  game.createTeam( "Team A", teams[0], function( err, team ) {
-    if ( err ) {
-      return cb( err );
-    } else {
-      game.teamA = team;
-      game.createTeam( "Team B", teams[1], function( err, team ) {
-        if ( err ) {
-          return cb( err );
-        } else {
-          game.teamB = team;
-          game.save();
-          return cb( null, game );
-        }
-      });
-    }
-  });
-}
-
 
 // Get a game, converting it to an object and
 GamesCtrl.prototype.getGame = function (req, res, next) {
@@ -156,15 +116,43 @@ GamesCtrl.prototype.getGame = function (req, res, next) {
       Game
         .findOne({_id: game._id })
         .populate({
-          path: 'players teamA teamB celebrities'
-          , select: 'name players'
+          path: 'players teamA teamB celebrities roundOne roundTwo roundThree'
+          , select: 'name players attempts team player'
         })
         .exec(function (err, game) {
           if ( err ) {
             return next( err );
           } else {
-            res.send( 200, game );
-            return next();
+            var gameObject = game.toObject();
+            // There has got to be a way to make score a calculated field that gets included in the object when it gets queried and returned in the populate statement
+            Team.findOne( game.teamA._id, function( err, teamA ) {
+              if ( err ) {
+                return next( err );
+              } else {
+                teamA.currentScore( function( err, teamAScore ) {
+                  if ( err ) {
+                    return next( err );
+                  } else {
+                    gameObject.teamA.score = teamAScore;
+                    Team.findOne( game.teamB._id, function( err, teamB ) {
+                      if ( err ) {
+                        return next( err );
+                      } else {
+                        teamB.currentScore( function( err, teamBScore ) {
+                          if ( err ) {
+                            return next( err );
+                          } else {
+                            gameObject.teamB.score = teamBScore;
+                            res.send( 200, gameObject );
+                            return next();
+                          }
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
           }
         });
     }

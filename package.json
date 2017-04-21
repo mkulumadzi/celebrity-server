@@ -20,6 +20,7 @@
   "dependencies": {
     "async": "^2.2.0",
     "config": "^1.25.1",
+    "lodash": "^4.17.4",
     "moment": "^2.18.1",
     "mongoose": "^4.9.1",
     "mongoose-timestamps": "0.0.1",
@@ -37,6 +38,7 @@
     "gulp-mocha": "^4.1.0",
     "gulp-util": "^3.0.8",
     "mocha": "^3.2.0",
-    "restify-errors": "^4.3.0"
+    "restify-errors": "^4.3.0",
+    "timekeeper": "^1.0.0"
   }
 }

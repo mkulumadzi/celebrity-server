@@ -88,6 +88,7 @@ describe('start game', function() {
           done();
         });
     });
+
   });
 
   describe('error conditions', function() {
@@ -158,11 +159,11 @@ describe('start game', function() {
 describe('next player', function() {
 
   var gameHeader;
-  var gameId;
+  var game;
 
   before( function(done) {
-    seeds.createNewGame( function( err, game ){
-      gameId = game._id;
+    seeds.createNewGame( function( err, g ){
+      game = g;
       gameHeader = "Bearer " + game._id;
       chai.request(server)
         .put('/game/start')
@@ -175,10 +176,10 @@ describe('next player', function() {
     });
   });
 
+
   it('should return the first player from team A at the start of the game', function(done) {
     chai.request(server)
       .get('/game/next')
-      .send({})
       .set('Authorization', gameHeader)
       .end(function(err, res) {
         should.not.exist(err);
@@ -196,7 +197,7 @@ describe('next player', function() {
       should.not.exist(err);
       game.nextPlayer( function( err, player) {
         should.not.exist(err);
-        var turn = new Turn({team: game.teamA, player: player })
+        var turn = new Turn({team: game.teamA, player: player, game: game._id, round: "roundOne" })
         turn.save( function( err, res ) {
           should.not.exist(err);
           game.roundOne.push(turn);
@@ -204,7 +205,6 @@ describe('next player', function() {
             should.not.exist(err);
             chai.request(server)
               .get('/game/next')
-              .send({})
               .set('Authorization', gameHeader)
               .end(function(err, res) {
                 should.not.exist(err);
@@ -216,5 +216,8 @@ describe('next player', function() {
       });
     });
   });
+
+  // Error conditions:
+  // - Game is not in started state: should throw an error
 
 });

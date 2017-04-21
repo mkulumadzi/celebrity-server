@@ -6,6 +6,8 @@ const mongoose = require('mongoose')
   , Celebrity = require('./celebrity')
   , Team = require('./team')
   , Turn = require('./turn')
+  , shuffle = require('shuffle-array')
+  , splitArray = require('split-array');
 
 var GameSchema = new mongoose.Schema({
   shortId: { type: String, required: true }
@@ -47,6 +49,46 @@ GameSchema.methods.addCelebrity = function( player, name, cb ) {
   });
 }
 
+GameSchema.methods.start = function( cb ) {
+  var game = this;
+  createRandomTeams( game, function( err, game) {
+    if ( err ) {
+      cb( err );
+    } else {
+      Game.findOneAndUpdate({'_id': game._id}, {$set:{"status":"started"}}, {new: true }, function( err, doc){
+        if ( err ) {
+          return cb( err );
+        } else {
+          return cb( null, doc );
+        }
+      });
+    }
+  });
+}
+
+var createRandomTeams = function( game, cb ) {
+  var players = game.players;
+  shuffle(players);
+  var teamSize = Math.ceil(players.length / 2 );
+  var teams = splitArray(players, teamSize);
+  game.createTeam( "Team A", teams[0], function( err, team ) {
+    if ( err ) {
+      return cb( err );
+    } else {
+      game.teamA = team;
+      game.createTeam( "Team B", teams[1], function( err, team ) {
+        if ( err ) {
+          return cb( err );
+        } else {
+          game.teamB = team;
+          game.save();
+          return cb( null, game );
+        }
+      });
+    }
+  });
+}
+
 GameSchema.methods.createTeam = function( name, playerIds, cb ) {
   var game = this;
   var team = new Team( { name: name, game: this._id, players: playerIds });
@@ -68,9 +110,6 @@ GameSchema.methods.createTeam = function( name, playerIds, cb ) {
     }
   });
 }
-
-
-
 
 // ToDo: Refactor with a map-reduce statement
 GameSchema.methods.currentRound = function( cb ) {
@@ -136,6 +175,23 @@ GameSchema.methods.nextTeam = function( cb ) {
 
 GameSchema.methods.nextPlayer = function( cb ) {
   var game = this;
+  game.nextPlayerId( function( err, playerId) {
+    if ( err ) {
+      cb( err );
+    } else {
+      Player.findOne({_id: playerId}, function( err, player ) {
+        if ( err ) {
+          cb( err );
+        } else {
+          cb( null, player );
+        }
+      });
+    }
+  })
+}
+
+GameSchema.methods.nextPlayerId = function( cb ) {
+  var game = this;
   game.nextTeam( function( err, nextTeam) {
     if ( err ) {
       cb(err);
@@ -175,6 +231,82 @@ GameSchema.methods.nextPlayer = function( cb ) {
       }
     }
   });
+}
+
+GameSchema.methods.remainingCelebritiesInRound = function(cb) {
+  var game = this;
+  game.currentRound( function(err, currentRound ) {
+    if ( err ) {
+      cb( err );
+    } else {
+      if ( currentRound === "roundOne" ) {
+        Celebrity.find( { game: game._id, doneRoundOne: false }, function( err, celebrities) {
+          if ( err ) {
+            cb( err );
+          } else {
+            cb( null, celebrities );
+          }
+        });
+      } else if ( currentRound === "roundTwo" ) {
+        Celebrity.find( { game: game._id, doneRoundTwo: false }, function( err, celebrities) {
+          if ( err ) {
+            cb( err );
+          } else {
+            cb( null, celebrities);
+          }
+        });
+      } else if ( currentRound === "roundThree" ) {
+        Celebrity.find( { game: game._id, doneRoundThree: false }, function( err, celebrities) {
+          if ( err ) {
+            cb( err );
+          } else {
+            cb( null, celebrities);
+          }
+        });
+      } else {
+        cb( new Error('Unknown round: ' + currentRound) );
+      }
+    }
+  });
+}
+
+GameSchema.methods.nextCelebrity = function( turn, cb ) {
+  var game = this;
+  if ( turn.round === "roundOne" ) {
+    turn.attemptedCelebrities( function( celebrities) {
+      Celebrity.find( { game: game._id, doneRoundOne: false, _id: { '$nin': celebrities } }, function( err, celebrities) {
+        if ( err ) {
+          cb( err );
+        } else if ( celebrities.length == 0 ) {
+          cb( null, null );
+        } else {
+          cb( null, shuffle(celebrities)[0]);
+        }
+      });
+    });
+  } else if ( turn.round === "roundTwo" ) {
+    turn.attemptedCelebrities( function( celebrities) {
+      Celebrity.find( { game: game._id, doneRoundTwo: false, _id: { '$nin': celebrities } }, function( err, celebrities) {
+        if ( err ) {
+          cb( err );
+        } else {
+          cb( null, shuffle(celebrities)[0]);
+        }
+      });
+    });
+  } else if ( turn.round === "roundThree" ) {
+    turn.attemptedCelebrities( function( celebrities) {
+      Celebrity.find( { game: game._id, doneRoundThree: false, _id: { '$nin': celebrities } }, function( err, celebrities) {
+        if ( err ) {
+          cb( err );
+        } else {
+          cb( null, shuffle(celebrities)[0]);
+        }
+      });
+    });
+  } else {
+    cb( new Error('Unknown round: ' + currentRound) );
+  }
 }
 
 GameSchema.plugin(timestamps);

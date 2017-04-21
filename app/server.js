@@ -59,6 +59,7 @@ server.get( '/echo', function( req, res, next){
 new controllers.game(server);
 new controllers.player(server);
 new controllers.celebrity(server);
+new controllers.turn(server);
 
 
 module.exports = server;
