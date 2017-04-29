@@ -28,6 +28,7 @@
     "restify": "^4.3.0",
     "restify-mongoose": "^1.0.0",
     "shuffle-array": "^1.0.1",
+    "socket.io": "^1.7.3",
     "split-array": "^1.0.1"
   },
   "devDependencies": {

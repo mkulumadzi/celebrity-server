@@ -2,7 +2,8 @@ const C = require('config')
   , restify = require('restify')
   , restifyMongoose = require('restify-mongoose')
   , mongoose = require('mongoose')
-  , controllers = require('./controllers');
+  , controllers = require('./controllers')
+  , socketio = require('socket.io');
 
 // Database configuration
 if( !mongoose.connection.readyState ){
@@ -21,6 +22,8 @@ var server = restify.createServer({
   name: 'restify.mongoose.celebrity',
   version: '1.0.0'
 });
+
+
 
 server.use(restify.acceptParser(server.acceptable));
 server.use(restify.queryParser());
@@ -61,5 +64,17 @@ new controllers.player(server);
 new controllers.celebrity(server);
 new controllers.turn(server);
 
+// Initialize socket.io
+var io = socketio.listen(server.server);
+io.sockets.on('connection', function (socket) {
+
+  // Join the room (games will create a room with a game._id)
+  socket.on('room', function(room) {
+    socket.join(room);
+    io.to(room).emit('message', "Welcome to the game: " + room);
+  });
+});
 
 module.exports = server;
+
+exports.io = io;

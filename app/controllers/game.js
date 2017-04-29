@@ -123,6 +123,10 @@ GamesCtrl.prototype.getGame = function (req, res, next) {
           if ( err ) {
             return next( err );
           } else {
+            if ( game.status === "new" ) {
+              res.send( 200, game );
+              return next();
+            }
             var gameObject = game.toObject();
             // There has got to be a way to make score a calculated field that gets included in the object when it gets queried and returned in the populate statement
             Team.findOne( game.teamA._id, function( err, teamA ) {

@@ -2,7 +2,8 @@ const mongoose = require('mongoose')
   , restifyMongoose = require('restify-mongoose')
   , Player = require('../models/player')
   , Game = require('../models/game')
-  , errors = require('restify-errors');
+  , errors = require('restify-errors')
+  , server = require('../server');
 
 var PlayersCtrl = function( server, opts ){
   server.post( '/join', this.joinGame );
@@ -26,6 +27,7 @@ PlayersCtrl.prototype.joinGame = function ( req, res, next) {
             if ( err ) {
               return next(err);
             } else {
+              server.io.to(game._id).emit('player joined', player);
               res.send( 201, player);
               return next();
             }
