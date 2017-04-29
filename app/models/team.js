@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
   , timestamps = require('mongoose-timestamps')
+  , async = require('async')
   , Schema = mongoose.Schema
   , ObjectId = Schema.ObjectId
   , Turn = require('./turn');

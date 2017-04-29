@@ -3,7 +3,8 @@ const mongoose = require('mongoose')
   , Player = require('../models/player')
   , Game = require('../models/game')
   , errors = require('restify-errors')
-  , server = require('../server');
+  , server = require('../server')
+  , io = server.io;
 
 var PlayersCtrl = function( server, opts ){
   server.post( '/join', this.joinGame );

@@ -3,7 +3,8 @@ const mongoose = require('mongoose')
   , Celebrity = require('../models/celebrity')
   , Player = require('../models/player')
   , Game = require('../models/game')
-  , errors = require('restify-errors');
+  , errors = require('restify-errors')
+  , server = require('../server');
 
 var CelebrityCtrl = function( server, opts ){
   server.post( '/celebrity', this.addCelebrity );
@@ -26,6 +27,7 @@ CelebrityCtrl.prototype.addCelebrity = function (req, res, next) {
               return next(new errors.BadRequestError(err.message));
             } else {
               game.save();
+              server.io.to(game._id).emit('celebrity added', celebrity);
               res.send(201, celebrity);
               return next();
             }
