@@ -107,58 +107,20 @@ var validateGameToStart = function( game, cb ) {
 }
 
 
-// Get a game, converting it to an object and
+// Get a game, converting it to an object and returning details
 GamesCtrl.prototype.getGame = function (req, res, next) {
   findGame( req, function( err, game ) {
     if ( err ) {
       return next( err );
     } else {
-      Game
-        .findOne({_id: game._id })
-        .populate({
-          path: 'players teamA teamB celebrities roundOne roundTwo roundThree'
-          , select: 'name players attempts team player'
-        })
-        .exec(function (err, game) {
-          if ( err ) {
-            return next( err );
-          } else {
-            if ( game.status === "new" ) {
-              res.send( 200, game );
-              return next();
-            }
-            var gameObject = game.toObject();
-            // There has got to be a way to make score a calculated field that gets included in the object when it gets queried and returned in the populate statement
-            Team.findOne( game.teamA._id, function( err, teamA ) {
-              if ( err ) {
-                return next( err );
-              } else {
-                teamA.currentScore( function( err, teamAScore ) {
-                  if ( err ) {
-                    return next( err );
-                  } else {
-                    gameObject.teamA.score = teamAScore;
-                    Team.findOne( game.teamB._id, function( err, teamB ) {
-                      if ( err ) {
-                        return next( err );
-                      } else {
-                        teamB.currentScore( function( err, teamBScore ) {
-                          if ( err ) {
-                            return next( err );
-                          } else {
-                            gameObject.teamB.score = teamBScore;
-                            res.send( 200, gameObject );
-                            return next();
-                          }
-                        });
-                      }
-                    });
-                  }
-                });
-              }
-            });
-          }
-        });
+      game.details( function( err, game) {
+        if ( err ) {
+          return next( err );
+        } else {
+          res.send( 200, game );
+          return next();
+        }
+      });
     }
   });
 }

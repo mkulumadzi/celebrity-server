@@ -67,6 +67,55 @@ GameSchema.methods.start = function( cb ) {
   });
 }
 
+GameSchema.methods.details = function( cb ) {
+  var game = this;
+  Game.findOne({_id: game._id})
+  .populate({
+    path: 'teamA teamB celebrities roundOne roundTwo roundThree'
+    , populate: {
+      path: 'players attempts'
+    }
+  })
+  .exec(function (err, game) {
+    if ( err ) {
+      cb( err );
+    } else {
+      if ( game.status === "new" ) {
+        cb( null, game );
+      }
+      var gameObject = game.toObject();
+      // There has got to be a way to make score a calculated field that gets included in the object when it gets queried and returned in the populate statement
+      Team.findOne( game.teamA._id, function( err, teamA ) {
+        if ( err ) {
+          cb( err );
+        } else {
+          teamA.currentScore( function( err, teamAScore ) {
+            if ( err ) {
+              cb( err );
+            } else {
+              gameObject.teamA.score = teamAScore;
+              Team.findOne( game.teamB._id, function( err, teamB ) {
+                if ( err ) {
+                  cb( err );
+                } else {
+                  teamB.currentScore( function( err, teamBScore ) {
+                    if ( err ) {
+                      cb( err );
+                    } else {
+                      gameObject.teamB.score = teamBScore;
+                      cb(null, gameObject);
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+  });
+}
+
 var createRandomTeams = function( game, cb ) {
   var players = game.players;
   shuffle(players);

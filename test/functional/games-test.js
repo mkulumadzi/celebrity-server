@@ -84,7 +84,6 @@ describe('start game', function() {
           res.body.players.should.have.length(4);
           res.body.celebrities.should.have.length(20);
           res.body.celebrities[0].name.should.exist;
-          should.not.exist(res.body.celebrities[0].created_at);
           done();
         });
     });
