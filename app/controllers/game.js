@@ -6,7 +6,8 @@ const mongoose = require('mongoose')
   , Team = require('../models/team')
   , errors = require('restify-errors')
   , shuffle = require('shuffle-array')
-  , splitArray = require('split-array');
+  , splitArray = require('split-array')
+  , server = require('../server');
 
 var GamesCtrl = function( server, opts ){
 
@@ -59,6 +60,7 @@ GamesCtrl.prototype.startGame = function (req, res, next) {
             if ( err ) {
               return next( err );
             } else {
+              server.io.to(game._id).emit('game started');
               res.send( 201, game );
               return next();
             }
@@ -145,6 +147,7 @@ GamesCtrl.prototype.getNextPlayer = function( req, res, next) {
               if ( err ) {
                 return next( err );
               } else {
+                server.io.to(player._id).emit('your turn');
                 res.send( 200, player );
                 return next();
               }

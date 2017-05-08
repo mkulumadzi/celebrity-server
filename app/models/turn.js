@@ -16,7 +16,7 @@ var TurnSchema = new mongoose.Schema({
   , game: { type: ObjectId, ref: 'Game', required: true }
   , round: { type: String, required: true }
   , player: { type: ObjectId, ref: 'Player', required: true }
-  , expiresAt: { type: Date, default: moment().add(1, 'm') }
+  , expiresAt: { type: Date, required: true }
   , attempts: [AttemptSchema]
 })
 
@@ -25,7 +25,7 @@ TurnSchema.statics.startTurn = function( player, game, cb ) {
     if ( err ) {
       cb( err );
     } else {
-      var turn = new Turn({ team: player.team, player: player._id, game: game._id, round: currentRound });
+      var turn = new Turn({ team: player.team, player: player._id, game: game._id, round: currentRound, expiresAt: moment().add(1, 'm') });
       turn.save( function( err, turn) {
         if ( err ) {
           cb( err );

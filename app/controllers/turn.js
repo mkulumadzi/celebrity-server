@@ -6,7 +6,8 @@ const mongoose = require('mongoose')
   , Player = require('../models/player')
   , Game = require('../models/game')
   , Attempt = Turn.Attempt
-  , errors = require('restify-errors');
+  , errors = require('restify-errors')
+  , server = require('../server');
 
 var TurnCtrl = function( server, opts ){
   server.post( '/turns', this.startTurn );
@@ -26,6 +27,7 @@ TurnCtrl.prototype.startTurn = function( req, res, next) {
         } else {
           var turnObject = turn.toObject();
           turnObject.celebrity = { _id: celebrity.id, name: celebrity.name};
+          server.io.to(game._id).emit('turn started');
           res.send(201, turnObject);
           return next();
         }

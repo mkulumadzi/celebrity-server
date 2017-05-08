@@ -2,7 +2,8 @@ const Game = require('../../app/models/game')
   , Player = require('../../app/models/player')
   , Celebrity = require('../../app/models/celebrity')
   , Turn = require('../../app/models/turn')
-  , seeds = require('../db/seeds');
+  , seeds = require('../db/seeds')
+  , moment = require('moment');
 
 describe('create game', function() {
 
@@ -196,7 +197,7 @@ describe('next player', function() {
       should.not.exist(err);
       game.nextPlayer( function( err, player) {
         should.not.exist(err);
-        var turn = new Turn({team: game.teamA, player: player, game: game._id, round: "roundOne" })
+        var turn = new Turn({team: game.teamA, player: player, game: game._id, round: "roundOne", expiresAt: moment().add(1, 'm') });
         turn.save( function( err, res ) {
           should.not.exist(err);
           game.roundOne.push(turn);
