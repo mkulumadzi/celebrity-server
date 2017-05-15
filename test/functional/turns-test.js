@@ -58,6 +58,7 @@ describe('game play', function() {
           res.should.have.status(201);
           res.body.celebrity.should.exist;
           res.body.expiresAt.should.exist;
+          res.body.turnDuration.should.equal(60);
           currentTurn = res.body._id;
           nextCelebrity = res.body.celebrity._id;
           done();
@@ -141,6 +142,7 @@ describe('game play', function() {
         .set('Authorization', gameHeader)
         .end(function(err, res) {
           should.not.exist(err);
+          should.exist(res.body.nextPlayer);
           var teamAScore = res.body.teamA.score;
           var teamBScore = res.body.teamB.score;
           var startScore = teamAScore + teamBScore;

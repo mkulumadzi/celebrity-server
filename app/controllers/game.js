@@ -133,25 +133,13 @@ GamesCtrl.prototype.getNextPlayer = function( req, res, next) {
     if ( err ) {
       return next( err );
     } else {
-      game.nextPlayer( function( err, nextPlayer) {
+      game.nextPlayer( function( err, player) {
         if ( err ) {
           return next( err );
         } else {
-          Player
-            .findOne({_id: nextPlayer })
-            .populate({
-              path: 'team'
-              , select: 'name'
-            })
-            .exec(function (err, player) {
-              if ( err ) {
-                return next( err );
-              } else {
-                server.io.to(player._id).emit('your turn');
-                res.send( 200, player );
-                return next();
-              }
-            });
+          server.io.to(player._id).emit('your turn');
+          res.send( 200, player );
+          return next();
         }
       });
     }

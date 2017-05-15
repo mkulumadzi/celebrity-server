@@ -8,7 +8,8 @@ const mongoose = require('mongoose')
   , Team = require('./team')
   , Turn = require('./turn')
   , shuffle = require('shuffle-array')
-  , splitArray = require('split-array');
+  , splitArray = require('split-array')
+  , moment = require('moment');
 
 var GameSchema = new mongoose.Schema({
   shortId: { type: String, required: true }
@@ -84,26 +85,34 @@ GameSchema.methods.details = function( cb ) {
         cb( null, game );
       }
       var gameObject = game.toObject();
-      // There has got to be a way to make score a calculated field that gets included in the object when it gets queried and returned in the populate statement
-      Team.findOne( game.teamA._id, function( err, teamA ) {
+      game.nextPlayer( function(err, nextPlayer) {
         if ( err ) {
           cb( err );
         } else {
-          teamA.currentScore( function( err, teamAScore ) {
+          gameObject.nextPlayer = nextPlayer;
+
+          // There has got to be a way to make score a calculated field that gets included in the object when it gets queried and returned in the populate statement
+          Team.findOne( game.teamA._id, function( err, teamA ) {
             if ( err ) {
               cb( err );
             } else {
-              gameObject.teamA.score = teamAScore;
-              Team.findOne( game.teamB._id, function( err, teamB ) {
+              teamA.currentScore( function( err, teamAScore ) {
                 if ( err ) {
                   cb( err );
                 } else {
-                  teamB.currentScore( function( err, teamBScore ) {
+                  gameObject.teamA.score = teamAScore;
+                  Team.findOne( game.teamB._id, function( err, teamB ) {
                     if ( err ) {
                       cb( err );
                     } else {
-                      gameObject.teamB.score = teamBScore;
-                      cb(null, gameObject);
+                      teamB.currentScore( function( err, teamBScore ) {
+                        if ( err ) {
+                          cb( err );
+                        } else {
+                          gameObject.teamB.score = teamBScore;
+                          cb(null, gameObject);
+                        }
+                      });
                     }
                   });
                 }
@@ -225,19 +234,61 @@ GameSchema.methods.nextTeam = function( cb ) {
 
 GameSchema.methods.nextPlayer = function( cb ) {
   var game = this;
-  game.nextPlayerId( function( err, playerId) {
-    if ( err ) {
+  game.currentPlayerAndTurn( function( err, playerObject) {
+    if( err ) {
       cb( err );
+    } else if ( playerObject) {
+      cb( null, playerObject );
     } else {
-      Player.findOne({_id: playerId}, function( err, player ) {
+      game.nextPlayerId( function( err, playerId) {
         if ( err ) {
           cb( err );
         } else {
-          cb( null, player );
+          Player.findOne({_id: playerId})
+          .populate({
+            path: 'team'
+            , select: 'name'
+          })
+          .exec(function ( err, player ) {
+            if ( err ) {
+              cb( err );
+            } else {
+              cb( null, player );
+            }
+          });
         }
       });
     }
-  })
+  });
+}
+
+GameSchema.methods.currentPlayerAndTurn = function( cb ) {
+  var game = this;
+  Turn.find({game: game._id}).sort('-created_at').exec(function( err, turns) {
+    if( err ) {
+      cb( err );
+    } else {
+      var turn = turns[0];
+      if( turn && moment(turn.expiresAt) > moment() ) {
+        Player.findOne({_id: turn.player})
+          .populate({
+            path: 'team'
+            , select: 'name'
+          })
+          .exec(function ( err, player ) {
+            if( err ) {
+              cb( err );
+            } else {
+              var playerObject = player.toObject();
+              playerObject.turn = turn;
+              cb( null, playerObject);
+            }
+          });
+      } else {
+        cb( null, null);
+      }
+    }
+  });
 }
 
 GameSchema.methods.nextPlayerId = function( cb ) {

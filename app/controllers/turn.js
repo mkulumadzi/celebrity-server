@@ -26,14 +26,38 @@ TurnCtrl.prototype.startTurn = function( req, res, next) {
           next( err );
         } else {
           var turnObject = turn.toObject();
+          turnObject.turnDuration = turnDuration( turn );
           turnObject.celebrity = { _id: celebrity.id, name: celebrity.name};
           server.io.to(game._id).emit('turn started');
+          notifyAtTurnEnd( game, turnObject );
           res.send(201, turnObject);
           return next();
         }
       });
     }
   });
+}
+
+var turnDuration = function( turn ) {
+  return Math.ceil(
+    moment.duration(moment(turn.expiresAt)
+    .diff(turn.created_at)).asSeconds()
+  );
+}
+
+var notifyAtTurnEnd = function( game, turn ) {
+  var notifyAt = turn.turnDuration * 1000;
+  setTimeout(function() {
+    console.log("The turn ended");
+    game.nextPlayer( function(err, player ) {
+      if ( err ) {
+        console.log(err);
+      } else {
+        console.log(player);
+        server.io.to(game._id).emit('turn ended', player);
+      }
+    });
+  }, notifyAt );
 }
 
 TurnCtrl.prototype.addAttempt = function( req, res, next) {

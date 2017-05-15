@@ -23,6 +23,7 @@ const Game = require('../../app/models/game')
         should.not.exist(err);
         should.exist(game.teamA.players[0].name);
         should.exist(game.celebrities[0].name);
+        should.exist(game.nextPlayer);
         done();
       });
     });

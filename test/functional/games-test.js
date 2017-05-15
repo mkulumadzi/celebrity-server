@@ -3,7 +3,8 @@ const Game = require('../../app/models/game')
   , Celebrity = require('../../app/models/celebrity')
   , Turn = require('../../app/models/turn')
   , seeds = require('../db/seeds')
-  , moment = require('moment');
+  , moment = require('moment')
+  , timekeeper = require('timekeeper');
 
 describe('create game', function() {
 
@@ -160,6 +161,7 @@ describe('next player', function() {
 
   var gameHeader;
   var game;
+  var nextPlayer;
 
   before( function(done) {
     seeds.createNewGame( function( err, g ){
@@ -184,6 +186,7 @@ describe('next player', function() {
       .end(function(err, res) {
         should.not.exist(err);
         res.should.have.status(200);
+        nextPlayer = res.body;
         res.body.name.should.exist;
         res.body.team.should.exist;
         res.body.team.name.should.exist;
@@ -193,29 +196,51 @@ describe('next player', function() {
   });
 
   it('should return the first player from team B after one turn has been played', function(done) {
-    Game.findOne({_id: gameId}, function( err, game ) {
+    Game.findOne({_id: gameId}, function( err, g ) {
       should.not.exist(err);
-      game.nextPlayer( function( err, player) {
+      game = g;
+      var turn = new Turn({team: game.teamA, player: nextPlayer, game: game._id, round: "roundOne", expiresAt: moment() });
+      turn.save( function( err, res ) {
         should.not.exist(err);
-        var turn = new Turn({team: game.teamA, player: player, game: game._id, round: "roundOne", expiresAt: moment().add(1, 'm') });
-        turn.save( function( err, res ) {
+        game.roundOne.push(turn);
+        game.save( function( err, res ) {
           should.not.exist(err);
-          game.roundOne.push(turn);
-          game.save( function( err, res ) {
-            should.not.exist(err);
-            chai.request(server)
-              .get('/game/next')
-              .set('Authorization', gameHeader)
-              .end(function(err, res) {
-                should.not.exist(err);
-                res.body.team.name.should.equal("Team B");
-                done();
-              });
-          });
+          chai.request(server)
+            .get('/game/next')
+            .set('Authorization', gameHeader)
+            .end(function(err, res) {
+              should.not.exist(err);
+              nextPlayer = res.body;
+              res.body.team.name.should.equal("Team B");
+              done();
+            });
         });
       });
     });
   });
+
+  it('should return that player and their turn if the turn has started', function(done) {
+    var time = moment().add(1, 'minutes').toDate();
+    timekeeper.travel(time);
+    var turn = new Turn({team: nextPlayer.team, player: nextPlayer._id, game: game._id, round: "roundOne", expiresAt: moment().add(1, 'm') });
+    turn.save( function( err, res ) {
+      should.not.exist(err);
+      game.roundOne.push(turn);
+      game.save( function( err, res ) {
+        should.not.exist(err);
+        chai.request(server)
+          .get('/game/next')
+          .set('Authorization', gameHeader)
+          .end(function(err, res) {
+            should.not.exist(err);
+            res.body._id.should.equal(nextPlayer._id);
+            should.exist(res.body.turn);
+            done();
+          });
+        });
+      });
+  });
+
 
   // Error conditions:
   // - Game is not in started state: should throw an error

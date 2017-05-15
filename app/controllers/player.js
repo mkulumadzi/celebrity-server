@@ -8,6 +8,7 @@ const mongoose = require('mongoose')
 
 var PlayersCtrl = function( server, opts ){
   server.post( '/join', this.joinGame );
+  server.get( '/player', this.getPlayer );
 }
 
 module.exports = PlayersCtrl;
@@ -20,7 +21,7 @@ PlayersCtrl.prototype.joinGame = function ( req, res, next) {
     if ( err ) {
       return next( err );
     } else {
-      validatePlayer( name, game, function(err) {
+      validateNewPlayer( name, game, function(err) {
         if ( err ) {
           return next(err);
         } else {
@@ -40,6 +41,17 @@ PlayersCtrl.prototype.joinGame = function ( req, res, next) {
 
 };
 
+PlayersCtrl.prototype.getPlayer = function ( req, res, next) {
+  validatePlayer( req, function( err, player, game ) {
+    if ( err ) {
+      next( err );
+    } else {
+      res.send(200, player);
+      return next();
+    }
+  });
+};
+
 var validateGame = function( shortId, cb ) {
   Game.findOne({ 'shortId': shortId }, function (err, game) {
     if ( !game ) {
@@ -54,7 +66,7 @@ var validateGame = function( shortId, cb ) {
   });
 }
 
-var validatePlayer = function( name, game, cb ) {
+var validateNewPlayer = function( name, game, cb ) {
   Player.findOne({ 'game': game._id, 'name': name}, function(err, existingPlayer) {
     if ( existingPlayer ) {
       var message = name + " has already joined the game"
@@ -80,4 +92,25 @@ var createPlayer = function( name, game, cb ) {
       return cb(null, player);
     }
   });
+}
+
+var validatePlayer = function( req, cb ) {
+  if (!req.header('Authorization')){
+    return cb(new errors.UnauthorizedError("Authorization token required"));
+  } else {
+    playerId = req.header('Authorization').split(' ')[1];
+    Player.findOne({_id: playerId }, function(err, player) {
+      if(err) {
+        return cb(new errors.BadRequestError(err.message));
+      } else {
+        Game.findOne({_id: player.game}, function(err, game) {
+          if(err) {
+            return cb(new errors.BadRequestError(err.message));
+          } else {
+            return cb( null, player, game );
+          }
+        });
+      }
+    })
+  }
 }
