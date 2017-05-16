@@ -98,7 +98,7 @@ TurnSchema.methods.timeRemaining = function() {
   var turn = this;
   return Math.ceil(
     moment.duration(moment(turn.expiresAt)
-    .diff(turn.created_at)).asSeconds()
+    .diff(moment())).asSeconds()
   );
 }
 
