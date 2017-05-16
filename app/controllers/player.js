@@ -2,8 +2,10 @@ const mongoose = require('mongoose')
   , restifyMongoose = require('restify-mongoose')
   , Player = require('../models/player')
   , Game = require('../models/game')
+  , Turn = require('../models/turn')
   , errors = require('restify-errors')
   , server = require('../server')
+  , moment = require('moment')
   , io = server.io;
 
 var PlayersCtrl = function( server, opts ){
@@ -46,8 +48,31 @@ PlayersCtrl.prototype.getPlayer = function ( req, res, next) {
     if ( err ) {
       next( err );
     } else {
-      res.send(200, player);
-      return next();
+      var playerObject = player.toObject();
+      game.nextPlayer( function( err, nextPlayer ) {
+        if ( err ) {
+          next( err );
+        } else if ( !nextPlayer || nextPlayer._id != player._id.toString() ) { // It is not the player's turn
+          playerObject.status = 0;
+          res.send(200, playerObject);
+          return next();
+        } else if ( !nextPlayer.turn ) { // It's the player's turn but they haven't started yet
+          playerObject.status = 1;
+          res.send(200, playerObject);
+          return next();
+        } else {  // The player's turn is in progress
+          Turn.findOne({_id: nextPlayer.turn._id})
+          .populate({
+            path: 'attempts.celebrity'
+          })
+          .exec(function( err, turn ) {
+            playerObject.turn = turn;
+            playerObject.status = 2;
+            res.send(200, playerObject);
+            return next();
+          })
+        }
+      });
     }
   });
 };

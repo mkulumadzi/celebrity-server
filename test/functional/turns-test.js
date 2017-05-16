@@ -59,6 +59,8 @@ describe('game play', function() {
           res.body.celebrity.should.exist;
           res.body.expiresAt.should.exist;
           res.body.turnDuration.should.equal(60);
+          res.body.attempts[0].celebrity.should.exist;
+          should.not.exist(res.body.attempts[0].correct);
           currentTurn = res.body._id;
           nextCelebrity = res.body.celebrity._id;
           done();
@@ -79,6 +81,8 @@ describe('game play', function() {
           res.body.expiresAt.should.exist;
           res.body.attempts[0].celebrity.should.exist;
           res.body.attempts[0].correct.should.exist;
+          res.body.attempts[1].celebrity.should.exist;
+          should.not.exist(res.body.attempts[1].correct);
           nextCelebrity = res.body.celebrity._id;
           done();
         });

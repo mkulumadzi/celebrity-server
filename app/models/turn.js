@@ -43,7 +43,7 @@ TurnSchema.statics.startTurn = function( player, game, cb ) {
             if ( err ) {
               cb( err );
             } else {
-              game.nextCelebrity( turn, function( err, celebrity) {
+              getNextCelebrity( game, turn, function( err, turn, celebrity) {
                 if ( err ) {
                   cb( err );
                 } else {
@@ -60,25 +60,71 @@ TurnSchema.statics.startTurn = function( player, game, cb ) {
 
 TurnSchema.methods.addAttempt = function( game, attempt, cb ) {
   var turn = this;
-  var attempt =  new Attempt(attempt);
-  turn.attempts.push(attempt);
-  turn.save( function( err, result) {
-    if ( err ) {
-      cb( err );
-    } else {
-      markCelebrityDoneIfCorrect( game, attempt, function( err ) {
-        if (err) {
+  var ex = this.attempts.filter(function(a) {
+    return a.celebrity == attempt.celebrity;
+  }).pop();
+
+  if ( ex ) { // Update existing attempt
+    ex.correct = attempt.correct;
+    ex.save(function( err ) {
+      if ( err ) {
+        cb( err );
+      } else {
+        completeAddingAttempt( turn, game, attempt, function( err, turn, celebrity) {
+          if ( err ) {
+            cb( err );
+          } else {
+            cb( null, turn, celebrity );
+          }
+        });
+      }
+    });
+  } else { // Fallback, mainly for testing, if the attempt is not already there.
+    var attempt = new Attempt(attempt);
+    turn.attempts.push(attempt);
+    turn.save( function( err, turn ) {
+      completeAddingAttempt( turn, game, attempt, function( err, turn, celebrity) {
+        if ( err ) {
           cb( err );
         } else {
-          game.nextCelebrity( turn, function( err, celebrity) {
-            if ( err ) {
-              cb( err );
-            } else {
-              cb( null, turn, celebrity );
-            }
-          });
+          cb( null, turn, celebrity );
         }
       });
+    });
+  }
+}
+
+var completeAddingAttempt = function( turn, game, attempt, cb ) {
+  markCelebrityDoneIfCorrect( game, attempt, function( err ) {
+    if (err) {
+      cb( err );
+    } else {
+      getNextCelebrity( game, turn, function( err, turn, celebrity) {
+        if ( err ) {
+          cb( err );
+        } else {
+          cb( null, turn, celebrity );
+        }
+      });
+    }
+  });
+}
+
+var getNextCelebrity = function( game, turn, cb ) {
+  game.nextCelebrity( turn, function( err, celebrity) {
+    if ( err ) {
+      cb( err );
+    } else if (celebrity) {
+      turn.attempts.push(new Attempt({celebrity: celebrity._id}));
+      turn.save( function( err, result) {
+        if ( err ) {
+          cb( err );
+        } else {
+          cb( null, turn, celebrity );
+        }
+      })
+    } else {
+      cb( null, turn, null );
     }
   });
 }

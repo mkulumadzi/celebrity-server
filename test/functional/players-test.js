@@ -1,5 +1,7 @@
 const Game = require('../../app/models/game')
-  , seeds = require('../db/seeds');
+  , seeds = require('../db/seeds')
+  , timekeeper = require('timekeeper')
+  , moment = require('moment');
 
 describe('players CRUD', function() {
 
@@ -108,6 +110,8 @@ describe('players CRUD', function() {
 
   describe('GET /player', function() {
 
+    var playerHeader;
+
     before( function(done) {
       seeds.createNewGame( function( err, g ){
         game = g;
@@ -118,48 +122,65 @@ describe('players CRUD', function() {
           .set('Authorization', gameHeader)
           .end(function(err, res) {
             should.not.exist(err);
+            done();
+          });
+        });
+      });
+
+    it('should return the player with status 1 if it is their turn', function(done) {
+      chai.request(server)
+        .get('/game/next')
+        .set('Authorization', gameHeader)
+        .end(function(err, res) {
+          should.not.exist(err);
+          playerHeader = "Bearer " + res.body._id;
+          chai.request(server)
+            .get('/player')
+            .set('Authorization', playerHeader)
+            .end(function(err, res){
+              should.not.exist(err);
+              res.should.have.status(200);
+              res.body.status.should.equal(1);
+              done();
+            });
+        });
+      });
+
+      it('should return the player with status 2 and the turn if the turn is in progress', function(done) {
+        chai.request(server)
+          .post('/turns')
+          .set('Authorization', playerHeader)
+          .send({})
+          .end(function(err, res) {
+            should.not.exist(err);
             chai.request(server)
-              .get('/game')
-              .set('Authorization', gameHeader)
-              .end(function(err, res) {
+              .get('/player')
+              .set('Authorization', playerHeader)
+              .end(function(err, res){
                 should.not.exist(err);
+                res.should.have.status(200);
+                res.body.status.should.equal(2);
+                should.exist(res.body.turn.attempts[0].celebrity.name);
                 done();
               });
-            });
           });
         });
 
-    // before( function(done) {
-    //   playerHeader = "Bearer " + playerId;
-    //   done();
-    // });
-    //
-    it('should return the player', function(done) {
-      done();
-      // chai.request(server)
-      //   .get('/player')
-      //   .set('Authorization', playerHeader)
-      //   .end(function(err, res){
-      //     should.not.exist(err);
-      //     res.should.have.status(200);
-      //     res.body._id.should.equal(playerId);
-      //     done();
-      //   });
-    });
-    //
-    // it('should indicate that it is not their turn, if they are not next', function(done) {
-    //   chai.request(server)
-    //     .get('/player')
-    //     .set('Authorization', playerHeader)
-    //     .end(function(err, res){
-    //       should.not.exist(err);
-    //       res.should.have.status(200);
-    //       res.body.turnStatus.should.equal(0);
-    //       done();
-    //     });
-    // });
+        it('should return the player with status 0 after the turn has ended', function(done) {
+          var time = moment().add(1, 'minutes').toDate();
+          timekeeper.travel(time);
+          chai.request(server)
+            .get('/player')
+            .set('Authorization', playerHeader)
+            .end(function(err, res){
+              should.not.exist(err);
+              res.should.have.status(200);
+              res.body.status.should.equal(0);
+              timekeeper.reset();
+              done();
+            });
+        });
 
   });
-
 
 });

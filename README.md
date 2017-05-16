@@ -48,3 +48,5 @@ _header: player id_
 - Randomly returns the next celebrity out of the remaining celebrities for the round that have not been marked as 'right' in a turn
 - Returns a 400 error if the player has already skipped twice during that turn
 - Returns a 401 error if the time limit for the turn has finished
+
+`GET /player` ~> Get player details

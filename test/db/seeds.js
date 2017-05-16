@@ -77,10 +77,11 @@ var playTurn = function( game, doRight, doWrong, cb) {
           if ( err ) {
             cb( err );
           } else {
-            var rightCelebrities = celebrities.slice(0,doRight);
-            var wrongCelebrities = celebrities.slice(doRight, (doRight + doWrong) );
-            async.eachSeries(rightCelebrities, function(celebrity, cb) {
-              var attempt = { celebrity: celebrity._id, correct: true }
+            var rightSet = celebrities.slice(0,doRight);
+            var wrongSet = celebrities.slice(doRight, (doRight + doWrong) );
+            async.eachSeries(rightSet, function(c, cb) {
+              var celebrity = turn.attempts.pop().celebrity;
+              var attempt = { celebrity: celebrity, correct: true }
               turn.addAttempt( game, attempt, function(err, turnObject) {
                 if ( err ) {
                   cb(err);
@@ -92,8 +93,9 @@ var playTurn = function( game, doRight, doWrong, cb) {
               if ( err ) {
                 cb(err);
               } else {
-                async.eachSeries(wrongCelebrities, function(celebrity, cb) {
-                  var attempt = { celebrity: celebrity._id, correct: false }
+                async.eachSeries(wrongSet, function(c, cb) {
+                  var celebrity = turn.attempts.pop().celebrity;
+                  var attempt = { celebrity: celebrity, correct: false }
                   turn.addAttempt( game, attempt, function(err, turnObject) {
                     if ( err ) {
                       cb(err);
