@@ -66,8 +66,9 @@ PlayersCtrl.prototype.getPlayer = function ( req, res, next) {
             path: 'attempts.celebrity'
           })
           .exec(function( err, turn ) {
-            playerObject.turn = turn;
+            playerObject.turn = turn.toObject();
             playerObject.status = 2;
+            playerObject.turn.celebrity = turn.attempts.pop().celebrity;
             res.send(200, playerObject);
             return next();
           })

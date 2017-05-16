@@ -160,6 +160,7 @@ describe('players CRUD', function() {
                 should.not.exist(err);
                 res.should.have.status(200);
                 res.body.status.should.equal(2);
+                should.exist(res.body.turn.celebrity.name);
                 should.exist(res.body.turn.attempts[0].celebrity.name);
                 done();
               });
