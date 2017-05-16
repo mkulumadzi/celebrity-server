@@ -26,7 +26,7 @@ TurnCtrl.prototype.startTurn = function( req, res, next) {
           next( err );
         } else {
           var turnObject = turn.toObject();
-          turnObject.turnDuration = turnDuration( turn );
+          turnObject.turnDuration = turn.timeRemaining();
           turnObject.celebrity = { _id: celebrity.id, name: celebrity.name};
           server.io.to(game._id).emit('turn started');
           notifyAtTurnEnd( game, turnObject );
@@ -36,13 +36,6 @@ TurnCtrl.prototype.startTurn = function( req, res, next) {
       });
     }
   });
-}
-
-var turnDuration = function( turn ) {
-  return Math.ceil(
-    moment.duration(moment(turn.expiresAt)
-    .diff(turn.created_at)).asSeconds()
-  );
 }
 
 var notifyAtTurnEnd = function( game, turn ) {

@@ -69,6 +69,7 @@ PlayersCtrl.prototype.getPlayer = function ( req, res, next) {
             playerObject.turn = turn.toObject();
             playerObject.status = 2;
             playerObject.turn.celebrity = turn.attempts.pop().celebrity;
+            playerObject.turn.timeRemaining = turn.timeRemaining();
             res.send(200, playerObject);
             return next();
           })

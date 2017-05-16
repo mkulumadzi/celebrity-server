@@ -162,6 +162,7 @@ describe('players CRUD', function() {
                 res.body.status.should.equal(2);
                 should.exist(res.body.turn.celebrity.name);
                 should.exist(res.body.turn.attempts[0].celebrity.name);
+                should.exist(res.body.turn.timeRemaining);
                 done();
               });
           });

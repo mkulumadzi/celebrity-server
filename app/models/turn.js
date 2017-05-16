@@ -94,6 +94,14 @@ TurnSchema.methods.addAttempt = function( game, attempt, cb ) {
   }
 }
 
+TurnSchema.methods.timeRemaining = function() {
+  var turn = this;
+  return Math.ceil(
+    moment.duration(moment(turn.expiresAt)
+    .diff(turn.created_at)).asSeconds()
+  );
+}
+
 var completeAddingAttempt = function( turn, game, attempt, cb ) {
   markCelebrityDoneIfCorrect( game, attempt, function( err ) {
     if (err) {
