@@ -9,7 +9,8 @@ const mongoose = require('mongoose')
   , Turn = require('./turn')
   , shuffle = require('shuffle-array')
   , splitArray = require('split-array')
-  , moment = require('moment');
+  , moment = require('moment')
+  , server = require('../server');
 
 var GameSchema = new mongoose.Schema({
   shortId: { type: String, required: true }

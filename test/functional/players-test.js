@@ -183,6 +183,51 @@ describe('players CRUD', function() {
             });
         });
 
+        it('should return the player with status 0 if the last attempt ended the round.', function(done) {
+          seeds.playNTurns( game, 1, 19, 0, function( err, game) {
+            should.not.exist(err);
+            chai.request(server)
+              .get('/game/next')
+              .set('Authorization', gameHeader)
+              .end(function(err, res) {
+                should.not.exist(err);
+                playerHeader = "Bearer " + res.body._id;
+
+                // Add a bit of time to make sure that this new turn is later than the old ones.
+                var time = moment().add(1, 'minutes').toDate();
+                timekeeper.travel(time);
+
+                chai.request(server)
+                  .post('/turns')
+                  .set('Authorization', playerHeader)
+                  .send({})
+                  .end(function(err, res) {
+                    should.not.exist(err);
+                    var currentTurn = res.body._id;
+                    var nextCelebrity = res.body.celebrity._id;
+                    var url = "/turns/" + currentTurn;
+                    chai.request(server)
+                      .put(url)
+                      .set('Authorization', playerHeader)
+                      .send({celebrity: nextCelebrity, correct: true})
+                      .end(function(err, res) {
+                        should.not.exist(err);
+                        chai.request(server)
+                          .get('/player')
+                          .set('Authorization', playerHeader)
+                          .end(function(err, res){
+                            should.not.exist(err);
+                            res.should.have.status(200);
+                            res.body.status.should.equal(0);
+                            timekeeper.reset();
+                            done();
+                  });
+                });
+              });
+            });
+          });
+        });
+
   });
 
 });

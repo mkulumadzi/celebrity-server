@@ -28,7 +28,7 @@ TurnCtrl.prototype.startTurn = function( req, res, next) {
           var turnObject = turn.toObject();
           turnObject.turnDuration = turn.timeRemaining();
           turnObject.celebrity = { _id: celebrity.id, name: celebrity.name};
-          server.io.to(game._id).emit('turn started');
+          server.io.to(game._id).emit('turn started', turnObject);
           notifyAtTurnEnd( game, turnObject );
           res.send(201, turnObject);
           return next();
@@ -41,13 +41,12 @@ TurnCtrl.prototype.startTurn = function( req, res, next) {
 var notifyAtTurnEnd = function( game, turn ) {
   var notifyAt = turn.turnDuration * 1000;
   setTimeout(function() {
-    console.log("The turn ended");
     game.nextPlayer( function(err, player ) {
       if ( err ) {
         console.log(err);
       } else {
-        console.log(player);
-        server.io.to(game._id).emit('turn ended', player);
+        var notification = { lastTurn: turn, nextPlayer: player };
+        server.io.to(game._id).emit('turn ended', notification);
       }
     });
   }, notifyAt );
@@ -72,11 +71,13 @@ TurnCtrl.prototype.addAttempt = function( req, res, next) {
               if ( err ) {
                 next( err );
               } else if (celebrity) {
+                notifyOfAttempt( game, turn, req.body );
                 var turnObject = turn.toObject();
                 turnObject.celebrity = { _id: celebrity.id, name: celebrity.name};
                 res.send(200, turnObject);
                 return next();
               } else {
+                notifyOfRoundEnd(turn);
                 res.send(200, turn);
                 return next();
               }
@@ -86,6 +87,22 @@ TurnCtrl.prototype.addAttempt = function( req, res, next) {
       }
     }
   });
+}
+
+var notifyOfAttempt = function( game, turn, attempt ) {
+  if ( game.teamA.toString() === turn.team.toString() ) {
+    var t = "teamA";
+  } else if ( game.teamB.toString() === turn.team.toString() ) {
+    var t = "teamB";
+  } else {
+    var t = "teamC";
+  }
+  var message = { team: t, round: turn.round, correct: attempt.correct };
+  server.io.to(turn.game).emit('attempt added', message);
+}
+
+var notifyOfRoundEnd = function( turn ) {
+  server.io.to(turn.game).emit('round ended', turn.round);
 }
 
 var validatePlayer = function( req, cb ) {

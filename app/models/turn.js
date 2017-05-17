@@ -103,6 +103,7 @@ TurnSchema.methods.timeRemaining = function() {
 }
 
 var completeAddingAttempt = function( turn, game, attempt, cb ) {
+
   markCelebrityDoneIfCorrect( game, attempt, function( err ) {
     if (err) {
       cb( err );
@@ -130,9 +131,16 @@ var getNextCelebrity = function( game, turn, cb ) {
         } else {
           cb( null, turn, celebrity );
         }
-      })
+      });
     } else {
-      cb( null, turn, null );
+      turn.expiresAt = moment() // Mark the turn as over;
+      turn.save( function( err, turn) {
+        if ( err ) {
+          cb( err );
+        } else {
+          cb( null, turn, null );
+        }
+      });
     }
   });
 }
@@ -161,7 +169,7 @@ var markCelebrityDoneIfCorrect = function(game, attempt, cb ) {
               }
             });
           } else if ( currentRound === "roundThree" ) {
-            celebrity.update({doneRoundTwo: true }, function( err, result ) {
+            celebrity.update({doneRoundThree: true }, function( err, result ) {
               if (err ) {
                 cb( err );
               } else {

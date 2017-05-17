@@ -212,7 +212,7 @@ describe('game play', function() {
                         .end(function(err, res) {
                           should.not.exist(err);
                           res.should.have.status(200);
-                          should.not.exist(res.body.celebrity);
+                          should.not.exist(res.body.celebrity);            
                           done();
                         });
                     });

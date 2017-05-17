@@ -18,7 +18,7 @@ TeamSchema.methods.currentScore = function( cb ) {
       cb( err );
     } else {
       currentScore = 0;
-      async.each( turns, function( turn, cb) {
+      async.eachSeries( turns, function( turn, cb) {
         turn.score( function( turnScore ) {
           currentScore += turnScore;
           cb();
