@@ -141,6 +141,7 @@ describe('players CRUD', function() {
               should.not.exist(err);
               res.should.have.status(200);
               res.body.status.should.equal(1);
+              should.exist(res.body.game.celebrities);
               done();
             });
         });

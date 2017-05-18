@@ -88,30 +88,41 @@ GameSchema.methods.details = function( cb ) {
       var gameObject = game.toObject();
       game.nextPlayer( function(err, nextPlayer) {
         if ( err ) {
-          cb( err );
+          console.log( err );
+          // Don't error out here - should allow nextPlayer to be null at the end of the game.
         } else {
           gameObject.nextPlayer = nextPlayer;
+        }
 
-          // There has got to be a way to make score a calculated field that gets included in the object when it gets queried and returned in the populate statement
-          Team.findOne( game.teamA._id, function( err, teamA ) {
+        game.gameStatus( function( err, status) {
             if ( err ) {
               cb( err );
             } else {
-              teamA.currentScore( function( err, teamAScore ) {
+              gameObject.status = status;
+              // There has got to be a way to make score a calculated field that gets included in the object when it gets queried and returned in the populate statement
+              Team.findOne( game.teamA._id, function( err, teamA ) {
                 if ( err ) {
                   cb( err );
                 } else {
-                  gameObject.teamA.score = teamAScore;
-                  Team.findOne( game.teamB._id, function( err, teamB ) {
+                  teamA.scoreSummary( function( err, scoreSummary, totalScore ) {
                     if ( err ) {
                       cb( err );
                     } else {
-                      teamB.currentScore( function( err, teamBScore ) {
+                      gameObject.teamA.score = totalScore;
+                      gameObject.teamA.scoreSummary = scoreSummary;
+                      Team.findOne( game.teamB._id, function( err, teamB ) {
                         if ( err ) {
                           cb( err );
                         } else {
-                          gameObject.teamB.score = teamBScore;
-                          cb(null, gameObject);
+                          teamB.scoreSummary( function( err, scoreSummary, totalScore ) {
+                            if ( err ) {
+                              cb( err );
+                            } else {
+                              gameObject.teamB.score = totalScore;
+                              gameObject.teamB.scoreSummary = scoreSummary;
+                              cb(null, gameObject);
+                            }
+                          });
                         }
                       });
                     }
@@ -120,7 +131,45 @@ GameSchema.methods.details = function( cb ) {
               });
             }
           });
-        }
+      });
+    }
+  });
+}
+
+GameSchema.methods.gameStatus = function( cb ) {
+  var game = this;
+  var celebs = this.celebrities.length;
+  game.totalScore( function( err, score) {
+    if ( err ) {
+      cb( err );
+    } else if ( score == 0 ) {
+      cb( null, 1 );  // Show first round instructions
+    } else if ( score == celebs ) {
+      cb( null, 2 ); // Show second round instructions
+    } else if ( score == celebs * 2 ) {
+      cb( null, 3 ); // Show third round instructions
+    } else if ( score == celebs * 3 ) {
+      cb( null, 4 ); // The game is over
+    } else {
+      cb( null, 0 ); // A round is in progress
+    }
+  });
+}
+
+GameSchema.methods.totalScore = function( cb ) {
+  var game = this;
+  Turn.find({game: game._id}, function( err, turns) {
+    if (err) {
+      cb( err );
+    } else {
+      score = 0;
+      async.eachSeries( turns, function( turn, cb) {
+        turn.score( function( turnScore ) {
+          score += turnScore;
+          cb();
+        });
+      }, function() {
+        cb( null, score );
       });
     }
   });
@@ -192,7 +241,7 @@ GameSchema.methods.currentRound = function( cb ) {
             } else if ( count < game.celebrities.length ) {
               return cb( null, 'roundThree' );
             } else {
-              return cb( new Error('The game is finished.') );
+              return cb( null, 'gameOver' );
             }
           });
         }
@@ -226,8 +275,10 @@ GameSchema.methods.nextTeam = function( cb ) {
         } else {
           cb(null, "teamB");
         }
+      } else if ( currentRound === "gameOver" ) {
+        cb( null, "gameOver");
       } else {
-        cb( new Error('Unknon round: ' + currentRound) );
+        cb( new Error('Unknown round: ' + currentRound) );
       }
     }
   });

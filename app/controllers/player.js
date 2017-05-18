@@ -49,30 +49,37 @@ PlayersCtrl.prototype.getPlayer = function ( req, res, next) {
       next( err );
     } else {
       var playerObject = player.toObject();
-      game.nextPlayer( function( err, nextPlayer ) {
+      game.details( function( err, details ) {
         if ( err ) {
           next( err );
-        } else if ( !nextPlayer || nextPlayer._id != player._id.toString() ) { // It is not the player's turn
-          playerObject.status = 0;
-          res.send(200, playerObject);
-          return next();
-        } else if ( !nextPlayer.turn ) { // It's the player's turn but they haven't started yet
-          playerObject.status = 1;
-          res.send(200, playerObject);
-          return next();
-        } else {  // The player's turn is in progress
-          Turn.findOne({_id: nextPlayer.turn._id})
-          .populate({
-            path: 'attempts.celebrity'
-          })
-          .exec(function( err, turn ) {
-            playerObject.turn = turn.toObject();
-            playerObject.status = 2;
-            playerObject.turn.celebrity = turn.attempts.pop().celebrity;
-            playerObject.turn.timeRemaining = turn.timeRemaining();
-            res.send(200, playerObject);
-            return next();
-          })
+        } else {
+          playerObject.game = details;
+          game.nextPlayer( function( err, nextPlayer ) {
+            if ( err ) {
+              next( err );
+            } else if ( !nextPlayer || nextPlayer._id != player._id.toString() ) { // It is not the player's turn
+              playerObject.status = 0;
+              res.send(200, playerObject);
+              return next();
+            } else if ( !nextPlayer.turn ) { // It's the player's turn but they haven't started yet
+              playerObject.status = 1;
+              res.send(200, playerObject);
+              return next();
+            } else {  // The player's turn is in progress
+              Turn.findOne({_id: nextPlayer.turn._id})
+              .populate({
+                path: 'attempts.celebrity'
+              })
+              .exec(function( err, turn ) {
+                playerObject.turn = turn.toObject();
+                playerObject.status = 2;
+                playerObject.turn.celebrity = turn.attempts.pop().celebrity;
+                playerObject.turn.timeRemaining = turn.timeRemaining();
+                res.send(200, playerObject);
+                return next();
+              })
+            }
+          });
         }
       });
     }
