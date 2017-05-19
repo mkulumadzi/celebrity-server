@@ -52,8 +52,8 @@ var validatePlayer = function( req, cb ) {
         Celebrity.count({ addedBy: player._id }, function(err, count) {
           if (err) {
             return cb(err);
-          } else if (count >= 5 ) {
-            message = player.name + " has already added 5 celebrities - that's the max per player."
+          } else if (count >= 10 ) {
+            message = player.name + " has already added 10 celebrities - that's the max per player."
             return cb( new errors.BadRequestError( message ));
           } else {
             return cb( null, player );

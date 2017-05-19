@@ -71,14 +71,14 @@ describe('celebrities CRUD', function() {
     })
   });
 
-  it('should allow a player to add a maximum of five celebrities', function(done){
+  it('should allow a player to add a maximum of ten celebrities', function(done){
     chai.request(server)
       .post('/join')
       .send({"shortId": game.shortId, "name": "Player 2"})
       .end(function(err, res){
         player = res.body;
         authHeader = "Bearer " + player._id;
-        celebrities = ["a", "b", "c", "d", "e"]
+        celebrities = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
         async.each(celebrities, function(celebrity, cb) {
           chai.request(server)
           .post('/celebrity')
