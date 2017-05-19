@@ -29,7 +29,7 @@ module.exports = GamesCtrl;
 
 GamesCtrl.prototype.createGame = function (req, res, next) {
 
-  var game = new Game( { 'shortId': shortId(), status: 'new' } );
+  var game = new Game( { 'shortId': shortId(), phase: 'new' } );
   game.save( function(err, game) {
     if (err) {
       return next(err);
@@ -89,7 +89,7 @@ var findGame = function( req, cb ) {
 }
 
 var validateGameToStart = function( game, cb ) {
-  if ( game.status !== "new" ) {
+  if ( game.phase !== "new" ) {
     return cb( new errors.BadRequestError("Only new games can be started"));
   } else {
     Player.count({"game": game._id}, function(err, count) {

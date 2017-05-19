@@ -21,7 +21,7 @@ Seeds.prototype.createNewGame = function( cb ) {
 }
 
 var createGame = function( cb ) {
-  Game.create({shortId: "ABCD", status: "new" }, function( err, game) {
+  Game.create({shortId: "ABCD", phase: "new" }, function( err, game) {
     if ( err ) { cb( err ); }
     cb( null, game );
   });

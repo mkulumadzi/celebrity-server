@@ -19,7 +19,7 @@ describe('create game', function() {
         res.should.be.json;
         res.body.shortId.should.be.string;
         res.body.shortId.should.have.lengthOf(4);
-        res.body.status.should.equal('new');
+        res.body.phase.should.equal('new');
         gameId = res.body._id.toString();
         done();
     });
@@ -71,7 +71,7 @@ describe('start game', function() {
         .end(function(err, res) {
           should.not.exist(err);
           res.should.have.status(201);
-          res.body.status.should.equal("started");
+          res.body.phase.should.equal("started");
           done();
         });
     });
@@ -245,4 +245,34 @@ describe('next player', function() {
   // Error conditions:
   // - Game is not in started state: should throw an error
 
+});
+
+describe('get game', function() {
+
+  var gameHeader;
+  var game;
+  var nextPlayer;
+
+  before( function(done) {
+    seeds.createNewGame( function( err, g ){
+      game = g;
+      gameHeader = "Bearer " + game._id;
+      done();
+    });
+  });
+
+  it('gets the game before it is started', function(done) {
+    chai.request(server)
+      .get('/game')
+      .set('Authorization', gameHeader)
+      .end(function(err, res) {
+        should.not.exist(err);
+        var game = res.body;
+        should.exist(game.celebrities[0]);
+        should.exist(game.celebrities[0].name);
+        should.exist(game.players[0]);
+        should.exist(game.players[0].name);
+        done();
+      });
+  });
 });

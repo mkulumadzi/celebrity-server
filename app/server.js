@@ -52,6 +52,10 @@ function unknownMethodHandler(req, res) {
 server.on('MethodNotAllowed', unknownMethodHandler);
 server.use(restify.CORS());
 
+server.on('uncaughtException', function (request, response, route, error) {
+  console.log(error);
+})
+
 // Basic routes
 server.get( '/echo', function( req, res, next){
   res.send( 200, req.query );

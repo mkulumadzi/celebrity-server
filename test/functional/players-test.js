@@ -26,13 +26,43 @@ describe('players CRUD', function() {
         .send({"shortId": shortId, "name": "Player 1"})
         .end(function(err, res){
           should.not.exist(err);
+          playerId = res.body._id;
           res.should.have.status(201);
           res.should.be.json;
           res.body.name.should.be.string;
-          res.body.game.should.be.string;
-          playerId = res.body._id;
+          should.exist(res.body.game._id);
           done();
         });
+    });
+
+    describe ('GET /player before game started', function() {
+
+      var playerHeader;
+
+      before( function(done) {
+        playerHeader = "Bearer " + playerId;
+        chai.request(server)
+        .post('/celebrity')
+        .set('Authorization', playerHeader)
+        .send({"name": "Bob Hope"})
+        .end(function(err, res){
+          should.not.exist(err);
+          done();
+        })
+      });
+
+      it('should return the player and the celebrities they have added', function(done) {
+        chai.request(server)
+        .get('/player')
+        .set('Authorization', playerHeader)
+        .end(function(err, res){
+          should.not.exist(err);
+          should.exist(res.body.celebrities[0]);
+          should.exist(res.body.celebrities[0].name);
+          done();
+        });
+      });
+
     });
 
     it('should require a name for the player', function(done) {
@@ -102,7 +132,7 @@ describe('players CRUD', function() {
     // it('should only allow new games to be joined', function(done){
     //   Game.findOne({'_id': gameId}, function(err, game) {
     //     should.not.exist(err);
-    //     game.update({"status": "started"})
+    //     game.update({"phase": "started"})
     //     done()
     //   });
     // });
@@ -141,6 +171,7 @@ describe('players CRUD', function() {
               should.not.exist(err);
               res.should.have.status(200);
               res.body.status.should.equal(1);
+              should.exist(res.body.teamName);
               should.exist(res.body.game.celebrities);
               done();
             });

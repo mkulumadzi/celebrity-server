@@ -14,7 +14,7 @@ const mongoose = require('mongoose')
 
 var GameSchema = new mongoose.Schema({
   shortId: { type: String, required: true }
-  , status: { type: String, required: true }
+  , phase: { type: String, required: true }
   , players: [ { type: ObjectId, ref: 'Player'} ]
   , celebrities: [ { type: ObjectId, ref: 'Celebrity'} ]
   , teamA: { type: ObjectId, ref: 'Team'}
@@ -58,7 +58,7 @@ GameSchema.methods.start = function( cb ) {
     if ( err ) {
       cb( err );
     } else {
-      Game.findOneAndUpdate({'_id': game._id}, {$set:{"status":"started"}}, {new: true }, function( err, doc){
+      Game.findOneAndUpdate({'_id': game._id}, {$set:{"phase":"started"}}, {new: true }, function( err, doc){
         if ( err ) {
           return cb( err );
         } else {
@@ -71,6 +71,42 @@ GameSchema.methods.start = function( cb ) {
 
 GameSchema.methods.details = function( cb ) {
   var game = this;
+  if (game.phase === "new") {
+    game.newGameDetails( function( err, game ) {
+      if ( err ) {
+        cb( err )
+      } else {
+        cb( null, game );
+      }
+    });
+  } else {
+    game.playingGameDetails( function( err, game ) {
+      if ( err ) {
+        cb( err )
+      } else {
+        cb( null, game );
+      }
+    })
+  }
+}
+
+GameSchema.methods.newGameDetails = function( cb ) {
+  var game = this;
+  Game.findOne({_id: game._id})
+  .populate({
+    path: 'players celebrities'
+  })
+  .exec(function (err, game) {
+    if ( err ) {
+      cb( err );
+    } else {
+      cb( null, game );
+    }
+  });
+}
+
+GameSchema.methods.playingGameDetails = function( cb ) {
+  var game = this;
   Game.findOne({_id: game._id})
   .populate({
     path: 'teamA teamB celebrities roundOne roundTwo roundThree'
@@ -82,11 +118,9 @@ GameSchema.methods.details = function( cb ) {
     if ( err ) {
       cb( err );
     } else {
-      if ( game.status === "new" ) {
-        cb( null, game );
-      }
       var gameObject = game.toObject();
       game.nextPlayer( function(err, nextPlayer) {
+        // Should refactor this to handle 'ended' games separtely from 'playing' games.
         if ( err ) {
           console.log( err );
           // Don't error out here - should allow nextPlayer to be null at the end of the game.

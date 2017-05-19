@@ -3,6 +3,8 @@ const mongoose = require('mongoose')
   , Player = require('../models/player')
   , Game = require('../models/game')
   , Turn = require('../models/turn')
+  , Team = require('../models/team')
+  , Celebrity = require('../models/celebrity')
   , errors = require('restify-errors')
   , server = require('../server')
   , moment = require('moment')
@@ -32,8 +34,14 @@ PlayersCtrl.prototype.joinGame = function ( req, res, next) {
               return next(err);
             } else {
               server.io.to(game._id).emit('player joined', player);
-              res.send( 201, player);
-              return next();
+              newGamePlayerDetails( player, game, function( err, playerObject ) {
+                if ( err ) {
+                  next( err );
+                } else {
+                  res.send(201, playerObject);
+                  return next();
+                }
+              });
             }
           });
         }
@@ -48,23 +56,63 @@ PlayersCtrl.prototype.getPlayer = function ( req, res, next) {
     if ( err ) {
       next( err );
     } else {
-      var playerObject = player.toObject();
-      game.details( function( err, details ) {
+      if ( game.phase === "new" ) {
+        newGamePlayerDetails( player, game, function( err, playerObject ) {
+          if ( err ) {
+            next( err );
+          } else {
+            res.send(200, playerObject);
+            return next();
+          }
+        });
+      } else {
+        playingGamePlayerDetails( player, game, function( err, playerObject) {
+          if ( err ) {
+            next( err );
+          } else {
+            res.send(200, playerObject);
+            return next();
+          }
+        });
+      }
+    }
+  });
+};
+
+var newGamePlayerDetails = function( player, game, cb ) {
+  var playerObject = player.toObject();
+  playerObject.game = game;
+  Celebrity.find({addedBy: player._id}, function( err, celebrities) {
+    if ( err ) {
+      cb( err );
+    } else {
+      playerObject.celebrities = celebrities
+      cb( null, playerObject );
+    }
+  });
+}
+
+var playingGamePlayerDetails = function( player, game, cb) {
+  var playerObject = player.toObject();
+  game.details( function( err, details ) {
+    if ( err ) {
+      cb( err );
+    } else {
+      playerObject.game = details;
+      Team.findOne({_id: playerObject.team}, function( err, team) {
         if ( err ) {
-          next( err );
+          cb( err );
         } else {
-          playerObject.game = details;
+          playerObject.teamName = team.name;
           game.nextPlayer( function( err, nextPlayer ) {
             if ( err ) {
-              next( err );
-            } else if ( !nextPlayer || nextPlayer._id != player._id.toString() ) { // It is not the player's turn
+              cb( err );
+            } else if ( !nextPlayer || nextPlayer._id != playerObject._id.toString() ) { // It is not the player's turn
               playerObject.status = 0;
-              res.send(200, playerObject);
-              return next();
+              cb( null, playerObject);
             } else if ( !nextPlayer.turn ) { // It's the player's turn but they haven't started yet
               playerObject.status = 1;
-              res.send(200, playerObject);
-              return next();
+              cb( null, playerObject);
             } else {  // The player's turn is in progress
               Turn.findOne({_id: nextPlayer.turn._id})
               .populate({
@@ -75,8 +123,7 @@ PlayersCtrl.prototype.getPlayer = function ( req, res, next) {
                 playerObject.status = 2;
                 playerObject.turn.celebrity = turn.attempts.pop().celebrity;
                 playerObject.turn.timeRemaining = turn.timeRemaining();
-                res.send(200, playerObject);
-                return next();
+                cb( null, playerObject);
               })
             }
           });
@@ -84,13 +131,13 @@ PlayersCtrl.prototype.getPlayer = function ( req, res, next) {
       });
     }
   });
-};
+}
 
 var validateGame = function( shortId, cb ) {
   Game.findOne({ 'shortId': shortId }, function (err, game) {
     if ( !game ) {
       return cb(new errors.BadRequestError("A valid shortId is required", null));
-    } else if ( game.status !== "new" ) {
+    } else if ( game.phase !== "new" ) {
       return cb(new errors.BadRequestError("Only new games may be joined", null));
     } else if ( err ) {
       return cb(err, null);
