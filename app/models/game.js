@@ -120,13 +120,44 @@ GameSchema.methods.endedGameDetails = function( cb ) {
     path: 'teamA teamB celebrities roundOne roundTwo roundThree'
     , populate: {
       path: 'players attempts'
+      , model: 'Player'
     }
   })
   .exec(function (err, game) {
     if ( err ) {
       cb( err );
     } else {
-      cb(null, game);
+      var gameObject = game.toObject();
+      gameObject.status = 4; // Hack in the 'end of game' status... need to clean this status stuff up.
+      Team.findOne( game.teamA._id, function( err, teamA ) {
+        if ( err ) {
+          cb( err );
+        } else {
+          teamA.scoreSummary( function( err, scoreSummary, totalScore ) {
+            if ( err ) {
+              cb( err );
+            } else {
+              gameObject.teamA.score = totalScore;
+              gameObject.teamA.scoreSummary = scoreSummary;
+              Team.findOne( game.teamB._id, function( err, teamB ) {
+                if ( err ) {
+                  cb( err );
+                } else {
+                  teamB.scoreSummary( function( err, scoreSummary, totalScore ) {
+                    if ( err ) {
+                      cb( err );
+                    } else {
+                      gameObject.teamB.score = totalScore;
+                      gameObject.teamB.scoreSummary = scoreSummary;
+                      cb(null, gameObject);
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
     }
   });
 }
@@ -138,6 +169,7 @@ GameSchema.methods.playingGameDetails = function( cb ) {
     path: 'teamA teamB celebrities roundOne roundTwo roundThree'
     , populate: {
       path: 'players attempts'
+      , model: 'Player'
     }
   })
   .exec(function (err, game) {
@@ -154,8 +186,7 @@ GameSchema.methods.playingGameDetails = function( cb ) {
           game.nextPlayer( function(err, nextPlayer) {
             // Should refactor this to handle 'ended' games separtely from 'playing' games.
             if ( err ) {
-              console.log( err );
-              // Don't error out here - should allow nextPlayer to be null at the end of the game.
+              cb( err );
             } else {
               gameObject.nextPlayer = nextPlayer;
             }

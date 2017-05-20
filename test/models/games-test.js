@@ -62,9 +62,15 @@ const Game = require('../../app/models/game')
         should.not.exist(err);
         seeds.playNTurns( game, 3, 20, 0, function( err, game) {
           should.not.exist(err);
-          game.details( function( err, game ) {
+          game.phase = "ended";
+          game.save(function( err, r) {
             should.not.exist(err);
-            done();
+            game.details( function( err, game ) {
+              should.not.exist(err);
+              game.status.should.equal(4);
+              should.exist(game.teamA.scoreSummary);
+              done();
+            });
           });
         });
       });

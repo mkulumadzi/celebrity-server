@@ -65,6 +65,15 @@ PlayersCtrl.prototype.getPlayer = function ( req, res, next) {
             return next();
           }
         });
+      } else if ( game.phase === "ended" ) {
+        endedGamePlayerDetails( player, game, function( err, playerObject) {
+          if ( err ) {
+            next( err );
+          } else {
+            res.send(200, playerObject);
+            return next();
+          }
+        });
       } else {
         playingGamePlayerDetails( player, game, function( err, playerObject) {
           if ( err ) {
@@ -90,6 +99,25 @@ var newGamePlayerDetails = function( player, game, cb ) {
       cb( null, playerObject );
     }
   });
+}
+
+var endedGamePlayerDetails = function( player, game, cb ) {
+  var playerObject = player.toObject();
+  game.details( function( err, game ) {
+    if ( err ) {
+      cb( err );
+    } else {
+      playerObject.game = game;
+      Team.findOne({_id: playerObject.team}, function( err, team) {
+        if ( err ) {
+          cb( err );
+        } else {
+          playerObject.teamName = team.name;
+          cb( null, playerObject );
+        }
+      });
+    }
+  })
 }
 
 var playingGamePlayerDetails = function( player, game, cb) {

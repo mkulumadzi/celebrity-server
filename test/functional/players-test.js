@@ -269,6 +269,8 @@ describe('players CRUD', function() {
               .end(function(err, res){
                 should.not.exist(err);
                 res.should.have.status(200);
+                res.body.game.status.should.equal(4);
+                should.exist(res.body.teamName);
                 done();
               });
           });
