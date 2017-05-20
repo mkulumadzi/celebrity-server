@@ -79,6 +79,14 @@ GameSchema.methods.details = function( cb ) {
         cb( null, game );
       }
     });
+  } else if (game.phase === "ended" ) {
+    game.endedGameDetails( function( err, game) {
+      if ( err ) {
+        cb( err )
+      } else {
+        cb( null, game );
+      }
+    });
   } else {
     game.playingGameDetails( function( err, game ) {
       if ( err ) {
@@ -105,6 +113,24 @@ GameSchema.methods.newGameDetails = function( cb ) {
   });
 }
 
+GameSchema.methods.endedGameDetails = function( cb ) {
+  var game = this;
+  Game.findOne({_id: game._id})
+  .populate({
+    path: 'teamA teamB celebrities roundOne roundTwo roundThree'
+    , populate: {
+      path: 'players attempts'
+    }
+  })
+  .exec(function (err, game) {
+    if ( err ) {
+      cb( err );
+    } else {
+      cb(null, game);
+    }
+  });
+}
+
 GameSchema.methods.playingGameDetails = function( cb ) {
   var game = this;
   Game.findOne({_id: game._id})
@@ -119,42 +145,50 @@ GameSchema.methods.playingGameDetails = function( cb ) {
       cb( err );
     } else {
       var gameObject = game.toObject();
-      game.nextPlayer( function(err, nextPlayer) {
-        // Should refactor this to handle 'ended' games separtely from 'playing' games.
-        if ( err ) {
-          console.log( err );
-          // Don't error out here - should allow nextPlayer to be null at the end of the game.
-        } else {
-          gameObject.nextPlayer = nextPlayer;
-        }
 
-        game.gameStatus( function( err, status) {
+      game.currentRound( function( err, currentRound) {
+        if ( err ) {
+          cb( err )
+        } else {
+          gameObject.currentRound = currentRound;
+          game.nextPlayer( function(err, nextPlayer) {
+            // Should refactor this to handle 'ended' games separtely from 'playing' games.
             if ( err ) {
-              cb( err );
+              console.log( err );
+              // Don't error out here - should allow nextPlayer to be null at the end of the game.
             } else {
-              gameObject.status = status;
-              // There has got to be a way to make score a calculated field that gets included in the object when it gets queried and returned in the populate statement
-              Team.findOne( game.teamA._id, function( err, teamA ) {
+              gameObject.nextPlayer = nextPlayer;
+            }
+
+            game.gameStatus( function( err, status) {
                 if ( err ) {
                   cb( err );
                 } else {
-                  teamA.scoreSummary( function( err, scoreSummary, totalScore ) {
+                  gameObject.status = status;
+                  // There has got to be a way to make score a calculated field that gets included in the object when it gets queried and returned in the populate statement
+                  Team.findOne( game.teamA._id, function( err, teamA ) {
                     if ( err ) {
                       cb( err );
                     } else {
-                      gameObject.teamA.score = totalScore;
-                      gameObject.teamA.scoreSummary = scoreSummary;
-                      Team.findOne( game.teamB._id, function( err, teamB ) {
+                      teamA.scoreSummary( function( err, scoreSummary, totalScore ) {
                         if ( err ) {
                           cb( err );
                         } else {
-                          teamB.scoreSummary( function( err, scoreSummary, totalScore ) {
+                          gameObject.teamA.score = totalScore;
+                          gameObject.teamA.scoreSummary = scoreSummary;
+                          Team.findOne( game.teamB._id, function( err, teamB ) {
                             if ( err ) {
                               cb( err );
                             } else {
-                              gameObject.teamB.score = totalScore;
-                              gameObject.teamB.scoreSummary = scoreSummary;
-                              cb(null, gameObject);
+                              teamB.scoreSummary( function( err, scoreSummary, totalScore ) {
+                                if ( err ) {
+                                  cb( err );
+                                } else {
+                                  gameObject.teamB.score = totalScore;
+                                  gameObject.teamB.scoreSummary = scoreSummary;
+                                  cb(null, gameObject);
+                                }
+                              });
                             }
                           });
                         }
@@ -163,9 +197,11 @@ GameSchema.methods.playingGameDetails = function( cb ) {
                   });
                 }
               });
-            }
           });
+        }
       });
+
+
     }
   });
 }
@@ -189,6 +225,8 @@ GameSchema.methods.gameStatus = function( cb ) {
     }
   });
 }
+
+
 
 GameSchema.methods.totalScore = function( cb ) {
   var game = this;

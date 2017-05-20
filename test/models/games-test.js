@@ -32,6 +32,7 @@ const Game = require('../../app/models/game')
           should.exist(game.celebrities[0].name);
           should.exist(game.nextPlayer);
           game.status.should.equal(1);
+          game.currentRound.should.equal("roundOne");
           done();
         });
       });
@@ -63,12 +64,6 @@ const Game = require('../../app/models/game')
           should.not.exist(err);
           game.details( function( err, game ) {
             should.not.exist(err);
-            should.exist(game.roundOne[0].attempts[0].celebrity);
-            should.exist(game.roundOne[0].attempts[0].correct);
-            should.exist(game.teamA.score);
-            should.exist(game.teamB.score);
-            should.exist(game.teamA.scoreSummary);
-            should.exist(game.teamB.scoreSummary);
             done();
           });
         });

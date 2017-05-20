@@ -267,7 +267,7 @@ describe('get game', function() {
       .set('Authorization', gameHeader)
       .end(function(err, res) {
         should.not.exist(err);
-        var game = res.body;
+        game = res.body;
         should.exist(game.celebrities[0]);
         should.exist(game.celebrities[0].name);
         should.exist(game.players[0]);
@@ -275,4 +275,27 @@ describe('get game', function() {
         done();
       });
   });
+
+  it('gets the game at the end of the game', function(done) {
+    Game.findOne({_id: game._id}, function( err, game ) {
+      game.start( function(err, game) {
+        should.not.exist(err);
+        seeds.playNTurns( game, 3, 20, 0, function( err, game) {
+          should.not.exist(err);
+          game.phase = "ended";
+          game.save(function(err, r) {
+            should.not.exist(err);
+            chai.request(server)
+              .get('/game')
+              .set('Authorization', gameHeader)
+              .end(function(err, res) {
+                should.not.exist(err);
+                done();
+              });
+          });
+        });
+      });
+    });
+  });
+
 });

@@ -38,15 +38,28 @@ TurnCtrl.prototype.startTurn = function( req, res, next) {
   });
 }
 
-var notifyAtTurnEnd = function( game, turn ) {
-  var notifyAt = turn.turnDuration * 1000;
+var notifyAtTurnEnd = function( game, turnObject ) {
+  var notifyAt = turnObject.turnDuration * 1000;
   setTimeout(function() {
     game.nextPlayer( function(err, player ) {
       if ( err ) {
         console.log(err);
       } else {
-        var notification = { lastTurn: turn, nextPlayer: player };
-        server.io.to(game._id).emit('turn ended', notification);
+        Turn.findOne({_id: turnObject._id}, function( err, turn) {
+          if ( err ) {
+            console.log( err );
+          } else {
+            turn.turnResults( function( err, results) {
+              if ( err ) {
+                console.log(err);
+              } else {
+                turnObject.results = results;
+                var notification = { lastTurn: turnObject, nextPlayer: player };
+                server.io.to(game._id).emit('turn ended', notification);
+              }
+            });
+          }
+        });
       }
     });
   }, notifyAt );
@@ -78,8 +91,14 @@ TurnCtrl.prototype.addAttempt = function( req, res, next) {
                 return next();
               } else {
                 notifyOfRoundEnd(turn);
-                res.send(200, turn);
-                return next();
+                checkIfGameIsOver(turn, function(err, r) {
+                  if ( err ) {
+                    next( err );
+                  } else {
+                    res.send(200, turn);
+                    return next();
+                  }
+                });
               }
             });
           }
@@ -103,6 +122,32 @@ var notifyOfAttempt = function( game, turn, attempt ) {
 
 var notifyOfRoundEnd = function( turn ) {
   server.io.to(turn.game).emit('round ended', turn.round);
+}
+
+var checkIfGameIsOver = function( turn, cb ) {
+  Game.findOne({_id: turn.game}, function(err, game) {
+    if ( err ) {
+      cb( err );
+    } else {
+      game.gameStatus(function( err, status) {
+        if ( err ) {
+          cb( err );
+        }
+        else if( status == 4 ) {
+          game.phase = "ended";
+          game.save(function(err, res) {
+            if ( err ) {
+              cb(err);
+            } else {
+              cb(null, "gameOver");
+            }
+          });
+        } else {
+          cb(null, null);
+        }
+      });
+    }
+  });
 }
 
 var validatePlayer = function( req, cb ) {

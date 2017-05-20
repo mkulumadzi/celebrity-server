@@ -209,6 +209,22 @@ TurnSchema.methods.score = function( cb ) {
   });
 }
 
+TurnSchema.methods.turnResults = function( cb ) {
+  var turn = this;
+  var summary = { right: 0, wrong: 0 };
+
+  async.eachSeries( this.attempts, function( attempt, cb) {
+    if( attempt.correct ) {
+      summary.right += 1;
+    } else {
+      summary.wrong += 1;
+    }
+    cb();
+  }, function() {
+    cb( null, summary );
+  });
+}
+
 TurnSchema.plugin(timestamps);
 
 var Turn = mongoose.model('Turn', TurnSchema)

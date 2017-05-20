@@ -260,6 +260,20 @@ describe('players CRUD', function() {
           });
         });
 
+        it('should return the player at the end of the game', function(done) {
+          seeds.playNTurns( game, 2, 20, 0, function( err, game) {
+            should.not.exist(err);
+            chai.request(server)
+              .get('/player')
+              .set('Authorization', playerHeader)
+              .end(function(err, res){
+                should.not.exist(err);
+                res.should.have.status(200);
+                done();
+              });
+          });
+        });
+
   });
 
 });

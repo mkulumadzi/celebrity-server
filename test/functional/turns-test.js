@@ -107,7 +107,6 @@ describe('game play', function() {
     });
 
     // Show that you can't add an attempt after the turn has expired
-    //// Will need to use the 'timekeeper' package to travel and show that the turn was expired
     it('returns an error if the turn has expired.', function(done){
       var url = "/turns/" + currentTurn;
       var time = moment().add(2, 'minutes').toDate();
@@ -212,7 +211,7 @@ describe('game play', function() {
                         .end(function(err, res) {
                           should.not.exist(err);
                           res.should.have.status(200);
-                          should.not.exist(res.body.celebrity);            
+                          should.not.exist(res.body.celebrity);
                           done();
                         });
                     });
@@ -222,7 +221,6 @@ describe('game play', function() {
         });
     });
 
-    // Show that when all the celebrities in the round are done, instead of getting the next celebrity, you get a status indicating that the round is over
     it('starts the next round', function(done) {
       chai.request(server)
         .get('/game/next')
@@ -242,6 +240,51 @@ describe('game play', function() {
               done();
             });
         });
+    });
+
+    // Show that when the last round is over, the game status is marked as 'ended'
+    it('ends the game when the last celebrity is played', function(done) {
+      Game.findOne({_id: game._id}, function( err, game ) {
+        should.not.exist(err);
+        seeds.playNTurns( game, 1, 20, 0, function( err, game) {
+          should.not.exist(err);
+          seeds.playNTurns( game, 1, 19, 0, function( err, game) {
+            should.not.exist(err);
+            chai.request(server)
+            .get('/game/next')
+            .set('Authorization', gameHeader)
+            .end(function(err, res) {
+              should.not.exist(err);
+              playerId = res.body._id;
+              playerHeader = "Bearer " + playerId;
+              chai.request(server)
+                .post('/turns')
+                .set('Authorization', playerHeader)
+                .send({})
+                .end(function(err, res) {
+                  should.not.exist(err);
+                  res.should.have.status(201);
+                  res.body.round.should.equal('roundThree');
+                  var url = "/turns/" + res.body._id;
+                  var nextCelebrity = res.body.celebrity._id;
+                  chai.request(server)
+                    .put(url)
+                    .set('Authorization', playerHeader)
+                    .send({celebrity: nextCelebrity, correct: true})
+                    .end(function(err, res) {
+                      should.not.exist(err);
+                      should.not.exist(res.body.celebrity);
+                      Game.findOne({_id: game._id }, function(err, game) {
+                        should.not.exist(err);
+                        game.phase.should.equal("ended");
+                        done();
+                      });
+                    });
+                });
+            });
+          });
+        });
+      });
     });
 
     // Show that you can't start a turn if you are not the next player
