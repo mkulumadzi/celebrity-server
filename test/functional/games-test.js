@@ -19,6 +19,7 @@ describe('create game', function() {
         res.should.be.json;
         res.body.shortId.should.be.string;
         res.body.shortId.should.have.lengthOf(4);
+        res.body.joinUrl.should.equal('http://localhost/join/' + res.body.shortId);
         res.body.phase.should.equal('new');
         gameId = res.body._id.toString();
         done();

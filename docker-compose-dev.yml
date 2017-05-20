@@ -6,6 +6,7 @@ server:
     - "8080:8080"
   environment:
     MONGO_HOST: mongodb
+    WEB_HOST: http://192.168.99.100
 mongodb:
   image: mongo
   expose:

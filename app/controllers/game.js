@@ -1,4 +1,5 @@
-const mongoose = require('mongoose')
+const C = require('config')
+  , mongoose = require('mongoose')
   , restifyMongoose = require('restify-mongoose')
   , Game = require('../models/game')
   , Celebrity = require('../models/celebrity')
@@ -34,7 +35,9 @@ GamesCtrl.prototype.createGame = function (req, res, next) {
     if (err) {
       return next(err);
     }
-    res.send( 201, game );
+    var gameObject = game.toObject();
+    gameObject.joinUrl = "http://" + C.Server.web_host + "/join/" + game.shortId;
+    res.send( 201, gameObject );
     return next();
   })
 

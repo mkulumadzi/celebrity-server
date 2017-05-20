@@ -2,5 +2,7 @@
   "Mongo": {
     "host": "MONGO_HOST",
     "database": "MONGO_DATABASE"
+  }, "Server": {
+    "web_host": "WEB_HOST"
   }
 }

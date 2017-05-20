@@ -3,5 +3,8 @@
     "host": "localhost",
     "port": 27017,
     "database": "celebrity-app"
+  },
+  "Server": {
+    "web_host": "localhost"
   }
 }
