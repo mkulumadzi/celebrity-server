@@ -1,4 +1,5 @@
-const mongoose = require('mongoose')
+const C = require('config')
+  , mongoose = require('mongoose')
   , timestamps = require('mongoose-timestamps')
   , async = require('async')
   , Schema = mongoose.Schema
@@ -108,7 +109,9 @@ GameSchema.methods.newGameDetails = function( cb ) {
     if ( err ) {
       cb( err );
     } else {
-      cb( null, game );
+      var gameObject = game.toObject();
+      gameObject.joinUrl = "http://" + C.Server.web_host + "/join/" + game.shortId;
+      cb( null, gameObject );
     }
   });
 }

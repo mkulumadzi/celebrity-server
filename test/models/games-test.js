@@ -14,26 +14,40 @@ const Game = require('../../app/models/game')
       seeds.createNewGame( function( err, res ){
         should.not.exist(err);
         game = res;
-        game.start( function( err, res ){
+        done();
+      });
+    });
+
+    it('returns the game details after the game starts', function(done) {
+      Game.findOne({_id: game._id}, function( err, game ) {
+        should.not.exist(err);
+        game.details( function( err, game ) {
           should.not.exist(err);
+          game.joinUrl.should.equal('http://localhost/join/' + game.shortId);
           done();
         });
       });
     });
 
-    it('returns the game details', function(done) {
+    it('returns the game details after the game starts', function(done) {
       Game.findOne({_id: game._id}, function( err, game ) {
         should.not.exist(err);
-        game.details( function( err, game ) {
+        game.start( function( err, res ){
           should.not.exist(err);
-          game.teamA.players.length.should.equal(2);
-          should.exist(game.teamA.players[0].name);
-          game.celebrities.length.should.equal(20);
-          should.exist(game.celebrities[0].name);
-          should.exist(game.nextPlayer);
-          game.status.should.equal(1);
-          game.currentRound.should.equal("roundOne");
-          done();
+          Game.findOne({_id: game._id}, function( err, game ) {
+            should.not.exist(err);
+            game.details( function( err, game ) {
+              should.not.exist(err);
+              game.teamA.players.length.should.equal(2);
+              should.exist(game.teamA.players[0].name);
+              game.celebrities.length.should.equal(20);
+              should.exist(game.celebrities[0].name);
+              should.exist(game.nextPlayer);
+              game.status.should.equal(1);
+              game.currentRound.should.equal("roundOne");
+              done();
+            });
+          });
         });
       });
     });
