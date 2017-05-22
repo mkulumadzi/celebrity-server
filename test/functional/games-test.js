@@ -248,7 +248,7 @@ describe('next player', function() {
 
 });
 
-describe('get game', function() {
+describe('get /game', function() {
 
   var gameHeader;
   var game;
@@ -277,6 +277,31 @@ describe('get game', function() {
       });
   });
 
+  it('gets the game  with a shortId', function(done) {
+    chai.request(server)
+      .get('/game?shortId=' + game.shortId)
+      .end(function(err, res) {
+        should.not.exist(err);
+        should.exist(res.body._id);
+        should.exist(game.celebrities[0]);
+        should.exist(game.celebrities[0].name);
+        should.exist(game.players[0]);
+        should.exist(game.players[0].name);
+        done();
+      });
+  });
+
+  it('returns an error if the game is not found', function(done) {
+    chai.request(server)
+      .get('/game?shortId=abc')
+      .end(function(err, res) {
+        should.exist(err);
+        res.should.have.status(400);
+        done();
+      });
+  })
+
+
   it('gets the game at the end of the game', function(done) {
     Game.findOne({_id: game._id}, function( err, game ) {
       game.start( function(err, game) {
@@ -286,6 +311,7 @@ describe('get game', function() {
           game.phase = "ended";
           game.save(function(err, r) {
             should.not.exist(err);
+            gameHeader = "Bearer " + game._id;
             chai.request(server)
               .get('/game')
               .set('Authorization', gameHeader)

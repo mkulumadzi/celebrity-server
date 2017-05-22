@@ -114,20 +114,39 @@ var validateGameToStart = function( game, cb ) {
 
 // Get a game, converting it to an object and returning details
 GamesCtrl.prototype.getGame = function (req, res, next) {
-  findGame( req, function( err, game ) {
-    if ( err ) {
-      return next( err );
-    } else {
-      game.details( function( err, game) {
-        if ( err ) {
-          return next( err );
-        } else {
-          res.send( 200, game );
-          return next();
-        }
-      });
-    }
-  });
+  if( req.params.shortId) {
+    Game.findOne({shortId: req.params.shortId}, function ( err, game) {
+      if ( err ) {
+        return next( err );
+      } else if (game) {
+        game.details( function( err, game) {
+          if ( err ) {
+            return next( err );
+          } else {
+            res.send( 200, game );
+            return next();
+          }
+        });
+      } else {
+        return next( new errors.BadRequestError("Game not found for Short Code: " + req.params.shortId));
+      }
+    });
+  } else {
+    findGame( req, function( err, game ) {
+      if ( err ) {
+        return next( err );
+      } else {
+        game.details( function( err, game) {
+          if ( err ) {
+            return next( err );
+          } else {
+            res.send( 200, game );
+            return next();
+          }
+        });
+      }
+    });
+  }
 }
 
 //Get next player for a game

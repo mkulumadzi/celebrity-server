@@ -120,7 +120,7 @@ GameSchema.methods.endedGameDetails = function( cb ) {
   var game = this;
   Game.findOne({_id: game._id})
   .populate({
-    path: 'teamA teamB celebrities roundOne roundTwo roundThree'
+    path: 'teamA teamB celebrities roundOne roundTwo roundThree players'
     , populate: {
       path: 'players attempts'
       , model: 'Player'
@@ -169,7 +169,7 @@ GameSchema.methods.playingGameDetails = function( cb ) {
   var game = this;
   Game.findOne({_id: game._id})
   .populate({
-    path: 'teamA teamB celebrities roundOne roundTwo roundThree'
+    path: 'teamA teamB celebrities roundOne roundTwo roundThree players'
     , populate: {
       path: 'players attempts'
       , model: 'Player'
@@ -363,28 +363,15 @@ GameSchema.methods.nextTeam = function( cb ) {
     if ( err ) {
       cb(err);
     } else {
-      if ( currentRound === "roundOne" ) {
-        if (game.roundOne.length % 2 == 0 ) {
-          cb(null, "teamA");
-        } else {
-          cb(null, "teamB");
-        }
-      } else if ( currentRound === "roundTwo" ) {
-        if (game.roundTwo.length % 2 == 0 ) {
-          cb(null, "teamA");
-        } else {
-          cb(null, "teamB");
-        }
-      } else if ( currentRound === "roundThree" ) {
-        if (game.roundThree.length % 2 == 0 ) {
-          cb(null, "teamA");
-        } else {
-          cb(null, "teamB");
-        }
-      } else if ( currentRound === "gameOver" ) {
+      if ( currentRound === "gameOver" ) {
         cb( null, "gameOver");
       } else {
-        cb( new Error('Unknown round: ' + currentRound) );
+        var turns = game.roundOne.length + game.roundTwo.length + game.roundThree.length;
+        if ( turns % 2 == 0 ) {
+          cb(null, "teamA");
+        } else {
+          cb(null, "teamB");
+        }
       }
     }
   });
